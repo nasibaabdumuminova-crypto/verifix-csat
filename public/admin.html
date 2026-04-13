@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verifix — Admin · CSAT Radar</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body class="page-admin">
+  <div class="bg-glow"></div>
+
+  <div id="loginScreen" class="card card-narrow">
+    <div class="brand">
+      <img src="/logo.png" alt="Verifix" class="brand-mark" />
+      <div class="brand-name">Verifix · Admin</div>
+    </div>
+    <h2>Введите пароль</h2>
+    <form id="loginForm">
+      <input type="password" id="pwd" placeholder="Пароль" required />
+      <button type="submit" class="btn-primary">Войти</button>
+      <div id="loginErr" class="message error" style="display:none">Неверный пароль</div>
+    </form>
+  </div>
+
+  <main id="dashboard" class="dashboard" hidden>
+    <header class="dash-header">
+      <div class="brand">
+        <img src="/logo.png" alt="Verifix" class="brand-mark" />
+        <div class="brand-name">CSAT Radar</div>
+      </div>
+      <button id="logout" class="btn-ghost">Выйти</button>
+    </header>
+
+    <section class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Средняя оценка</div>
+        <div class="stat-value" id="avgValue">—</div>
+        <div class="stat-stars" id="avgStars"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Всего отзывов</div>
+        <div class="stat-value" id="totalValue">—</div>
+      </div>
+    </section>
+
+    <section class="table-wrap">
+      <table class="reviews-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Оценка</th>
+            <th>Комментарий</th>
+            <th>Дата</th>
+          </tr>
+        </thead>
+        <tbody id="reviewsBody">
+          <tr><td colspan="4" class="empty">Загрузка…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+<script>
+const loginScreen = document.getElementById('loginScreen');
+const dashboard = document.getElementById('dashboard');
+const loginForm = document.getElementById('loginForm');
+const loginErr = document.getElementById('loginErr');
+
+let password = sessionStorage.getItem('csat_pwd') || '';
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  password = document.getElementById('pwd').value;
+  const ok = await loadData();
+  if (ok) {
+    sessionStorage.setItem('csat_pwd', password);
+    loginScreen.hidden = true;
+    dashboard.hidden = false;
+  } else {
+    loginErr.style.display = 'block';
+  }
+});
+
+document.getElementById('logout').addEventListener('click', () => {
+  sessionStorage.removeItem('csat_pwd');
+  location.reload();
+});
+
+function renderStars(n) {
+  const full = Math.round(n);
+  return '★★★★★'.slice(0, full) + '☆☆☆☆☆'.slice(0, 5 - full);
+}
+
+function fmtDate(s) {
+  const d = new Date(s);
+  return d.toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+async function loadData() {
+  try {
+    const r = await fetch('/api/admin/reviews?password=' + encodeURIComponent(password));
+    if (r.status === 401) return false;
+    const data = await r.json();
+
+    document.getElementById('avgValue').textContent = data.total ? data.avg.toFixed(2) : '—';
+    document.getElementById('avgStars').textContent = data.total ? renderStars(data.avg) : '';
+    document.getElementById('totalValue').textContent = data.total;
+
+    const tbody = document.getElementById('reviewsBody');
+    if (!data.reviews.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">Пока нет отзывов</td></tr>';
+    } else {
+      tbody.innerHTML = data.reviews.map((rv) => `
+        <tr>
+          <td class="muted">#${rv.id}</td>
+          <td><span class="rating-badge r-${rv.rating}">${renderStars(rv.rating)} <b>${rv.rating}</b></span></td>
+          <td>${rv.comment ? escapeHtml(rv.comment) : '<span class="muted">—</span>'}</td>
+          <td class="muted">${fmtDate(rv.created_at)}</td>
+        </tr>
+      `).join('');
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Auto-login if password is in sessionStorage
+(async () => {
+  if (password) {
+    const ok = await loadData();
+    if (ok) {
+      loginScreen.hidden = true;
+      dashboard.hidden = false;
+      // Auto-refresh every 15s
+      setInterval(loadData, 15000);
+    } else {
+      sessionStorage.removeItem('csat_pwd');
+    }
+  }
+})();
+</script>
+</body>
+</html>

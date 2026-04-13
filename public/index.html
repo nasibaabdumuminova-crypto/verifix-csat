@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verifix — оцените нашу работу</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body class="page-public">
+  <div class="bg-glow"></div>
+  <main class="card">
+    <div class="brand">
+      <img src="/logo.png" alt="Verifix" class="brand-mark" />
+      <div class="brand-name">Verifix</div>
+    </div>
+    <h1>Насколько Вы готовы рекомендовать нашу систему Verifix своему окружению?</h1>
+    <p class="subtitle">Ваше мнение помогает нам становиться лучше ✨</p>
+
+    <form id="reviewForm" novalidate>
+      <div class="stars" role="radiogroup" aria-label="Оценка от 1 до 5">
+        <input type="radio" id="s5" name="rating" value="5" /><label for="s5" title="Отлично">★</label>
+        <input type="radio" id="s4" name="rating" value="4" /><label for="s4" title="Хорошо">★</label>
+        <input type="radio" id="s3" name="rating" value="3" /><label for="s3" title="Нормально">★</label>
+        <input type="radio" id="s2" name="rating" value="2" /><label for="s2" title="Плохо">★</label>
+        <input type="radio" id="s1" name="rating" value="1" /><label for="s1" title="Очень плохо">★</label>
+      </div>
+
+      <label for="comment" class="field-label">Почему такая оценка?</label>
+      <textarea
+        name="comment"
+        id="comment"
+        rows="4"
+        maxlength="2000"
+        placeholder="Расскажите подробнее (необязательно)…"
+      ></textarea>
+
+      <button type="submit" class="btn-primary" id="submitBtn">Отправить</button>
+      <div id="message" class="message" aria-live="polite"></div>
+    </form>
+  </main>
+
+<script>
+const form = document.getElementById('reviewForm');
+const msg = document.getElementById('message');
+const btn = document.getElementById('submitBtn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.textContent = '';
+  msg.className = 'message';
+  const rating = form.rating.value;
+  const comment = form.comment.value.trim();
+  if (!rating) {
+    msg.textContent = 'Пожалуйста, выберите оценку';
+    msg.classList.add('error');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Отправляем…';
+  try {
+    const r = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating, comment }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Ошибка');
+    form.reset();
+    msg.textContent = 'Спасибо! Ваша оценка отправлена 💜';
+    msg.classList.add('success');
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.classList.add('error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Отправить';
+  }
+});
+</script>
+</body>
+</html>

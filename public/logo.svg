@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="vfxGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3F6BFF"/>
+      <stop offset="100%" stop-color="#B83BEA"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="100" height="100" rx="22" fill="url(#vfxGrad)"/>
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5">
+    <!-- Outer loop (full oval, open at bottom) -->
+    <path d="M22 78 L22 50 C22 30 34 18 50 18 C66 18 78 30 78 50 L78 78"/>
+    <!-- Second loop -->
+    <path d="M32 78 L32 50 C32 36 40 28 50 28 C60 28 68 36 68 50 L68 78"/>
+    <!-- Third loop -->
+    <path d="M42 78 L42 50 C42 42 45 38 50 38 C55 38 58 42 58 50 L58 78"/>
+    <!-- Inner core (small loop) -->
+    <path d="M50 78 L50 55 C50 50 47 48 47 52"/>
+  </g>
+</svg>
