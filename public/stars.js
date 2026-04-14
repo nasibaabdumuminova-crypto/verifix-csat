@@ -8,8 +8,8 @@
 
   let W, H, stars = [], mouse = { x: -9999, y: -9999 };
   const STAR_COUNT = 120;
-  const ATTRACT_RADIUS = 160;
-  const ATTRACT_FORCE = 0.04;
+  const ATTRACT_RADIUS = 260;
+  const ATTRACT_FORCE = 0.12;
 
   function resize() {
     W = canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 1280;
@@ -94,18 +94,17 @@
     }
 
     // Draw faint lines between nearby stars close to mouse
-    ctx.globalAlpha = 0.08;
     ctx.strokeStyle = '#b48cff';
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 1.2;
     for (let i = 0; i < stars.length; i++) {
       const a = stars[i];
       const dma = Math.sqrt((mouse.x - a.x) ** 2 + (mouse.y - a.y) ** 2);
-      if (dma > ATTRACT_RADIUS * 1.5) continue;
+      if (dma > ATTRACT_RADIUS * 1.8) continue;
       for (let j = i + 1; j < stars.length; j++) {
         const b = stars[j];
         const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-        if (d < 100) {
-          ctx.globalAlpha = 0.06 * (1 - d / 100);
+        if (d < 140) {
+          ctx.globalAlpha = 0.35 * (1 - d / 140);
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
