@@ -55,6 +55,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_file("logo.svg", "image/svg+xml; charset=utf-8")
         if path == "/logo.png":
             return self._send_file("logo.png", "image/png")
+        if path == "/stars.js":
+            return self._send_file("stars.js", "application/javascript; charset=utf-8")
         if path == "/healthz":
             self.send_response(200)
             self.end_headers()
