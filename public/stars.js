@@ -93,23 +93,32 @@
       ctx.restore();
     }
 
-    // Draw faint lines between nearby stars close to mouse
+    // Draw lines between nearby stars — bright near cursor, faint elsewhere
     ctx.strokeStyle = '#b48cff';
-    ctx.lineWidth = 1.2;
+    const LINE_DIST = 150;
     for (let i = 0; i < stars.length; i++) {
       const a = stars[i];
-      const dma = Math.sqrt((mouse.x - a.x) ** 2 + (mouse.y - a.y) ** 2);
-      if (dma > ATTRACT_RADIUS * 1.8) continue;
       for (let j = i + 1; j < stars.length; j++) {
         const b = stars[j];
         const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-        if (d < 140) {
-          ctx.globalAlpha = 0.35 * (1 - d / 140);
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
+        if (d >= LINE_DIST) continue;
+
+        // How close is the midpoint of this line to the mouse?
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        const dm = Math.sqrt((mouse.x - mx) ** 2 + (mouse.y - my) ** 2);
+        const proximity = Math.max(0, 1 - dm / ATTRACT_RADIUS); // 1 = on cursor, 0 = far away
+        const fadeDist = 1 - d / LINE_DIST;
+
+        // Far from cursor: very faint (0.03). Near cursor: bright (up to 0.6)
+        const alpha = fadeDist * (0.03 + proximity * 0.57);
+        const width = 0.4 + proximity * 1.6;
+
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
       }
     }
     ctx.globalAlpha = 1;
