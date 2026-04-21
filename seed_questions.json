@@ -1,0 +1,299 @@
+[
+  {
+    "key": "role", "section_number": 1, "section_title": "О компании",
+    "section_help": "Контекст вашего бизнеса помогает нам правильно интерпретировать ответы.",
+    "position": 1, "title": "Ваша роль в компании", "help_text": null,
+    "type": "radio", "required": true,
+    "config": {
+      "options": ["Владелец / CEO", "Операционный директор (COO)", "Финансовый директор (CFO)",
+                  "HR-руководитель (директор / Head of People)", "HR-специалист / HR-менеджер",
+                  "Руководитель отдела (не HR)", "Другое"],
+      "allow_other": true
+    },
+    "show_if": null
+  },
+  {
+    "key": "company_size", "section_number": 1, "section_title": "О компании",
+    "section_help": "Контекст вашего бизнеса помогает нам правильно интерпретировать ответы.",
+    "position": 2, "title": "Сколько сотрудников в вашей компании?", "help_text": null,
+    "type": "radio", "required": true,
+    "config": { "options": ["До 50", "50–200", "200–500", "500–1000", "1000–5000", "Более 5000"] },
+    "show_if": null
+  },
+  {
+    "key": "tenure", "section_number": 1, "section_title": "О компании",
+    "section_help": "Контекст вашего бизнеса помогает нам правильно интерпретировать ответы.",
+    "position": 3, "title": "Как долго вы работаете с Verifix?", "help_text": null,
+    "type": "radio", "required": true,
+    "config": {
+      "options": ["Ещё на этапе внедрения / пилота", "Менее 3 месяцев", "3–6 месяцев",
+                  "6–12 месяцев", "1–2 года", "Более 2 лет"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "modules_used", "section_number": 2, "section_title": "Использование продукта",
+    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
+    "position": 1, "title": "Какие модули вы используете регулярно (каждый день или каждую неделю)?",
+    "help_text": null, "type": "checkbox", "required": true,
+    "config": {
+      "options": ["Учёт рабочего времени", "Табели", "Расчёт зарплаты", "КЭДО", "ATS (подбор)",
+                  "Performance (KPI)", "AI Assistant", "Управление сменами",
+                  "Мобильное приложение", "Аналитика и отчёты"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "most_useful_module", "section_number": 2, "section_title": "Использование продукта",
+    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
+    "position": 2, "title": "Какой модуль приносит вам больше всего пользы? Почему?",
+    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
+  },
+  {
+    "key": "unused_modules", "section_number": 2, "section_title": "Использование продукта",
+    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
+    "position": 3, "title": "Есть ли модули, которые вы не используете? Почему?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "usage_frequency", "section_number": 2, "section_title": "Использование продукта",
+    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
+    "position": 4, "title": "Как часто вы заходите в Verifix (веб или приложение)?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Каждый день", "Несколько раз в неделю", "Раз в неделю", "Реже раза в неделю"] },
+    "show_if": null
+  },
+  {
+    "key": "active_users_percent", "section_number": 2, "section_title": "Использование продукта",
+    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
+    "position": 5, "title": "Сколько сотрудников компании активно пользуются приложением Verifix?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Менее 10%", "10–30%", "30–60%", "60–90%", "90% и более"] },
+    "show_if": null
+  },
+  {
+    "key": "main_task", "section_number": 3, "section_title": "Ценность и ROI",
+    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
+    "position": 1, "title": "Какую главную задачу решает для вас Verifix сегодня?",
+    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
+  },
+  {
+    "key": "metrics_improved", "section_number": 3, "section_title": "Ценность и ROI",
+    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
+    "position": 2, "title": "Какие метрики улучшились после внедрения? (цифры или % если есть)",
+    "help_text": "Например: «время на расчёт ЗП −50%», «точность учёта 100%», «текучка −20%»",
+    "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "roi_category", "section_number": 3, "section_title": "Ценность и ROI",
+    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
+    "position": 3, "title": "Окупается ли для вас подписка Verifix?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Нет, не окупается", "Сложно сказать / не считали", "Да, окупается", "Да, окупается многократно"] },
+    "show_if": null
+  },
+  {
+    "key": "painful_to_lose", "section_number": 3, "section_title": "Ценность и ROI",
+    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
+    "position": 4, "title": "Если бы нужно было убрать один модуль — какой было бы больнее всего потерять?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "less_valuable", "section_number": 3, "section_title": "Ценность и ROI",
+    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
+    "position": 5, "title": "Какой модуль оказался менее ценным, чем вы ожидали?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "nps", "section_number": 4, "section_title": "Удовлетворённость",
+    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
+    "position": 1, "title": "Насколько вероятно, что вы порекомендуете Verifix коллеге из другой компании?",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 0, "max": 10, "low_label": "Точно не порекомендую", "high_label": "Точно порекомендую" },
+    "show_if": null
+  },
+  {
+    "key": "nps_reason", "section_number": 4, "section_title": "Удовлетворённость",
+    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
+    "position": 2, "title": "Почему вы поставили такую оценку?",
+    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
+  },
+  {
+    "key": "csat_product", "section_number": 4, "section_title": "Удовлетворённость",
+    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
+    "position": 3, "title": "CSAT продукт — насколько вы в целом довольны продуктом Verifix?",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 1, "max": 5, "low_label": "Крайне недоволен", "high_label": "Полностью доволен" },
+    "show_if": null
+  },
+  {
+    "key": "csat_service", "section_number": 4, "section_title": "Удовлетворённость",
+    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
+    "position": 4, "title": "CSAT сервис — насколько вы в целом довольны работой команды Verifix (менеджер, поддержка)?",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 1, "max": 5, "low_label": "Крайне недоволен", "high_label": "Полностью доволен" },
+    "show_if": null
+  },
+  {
+    "key": "missing_features", "section_number": 5, "section_title": "Боли и пожелания",
+    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
+    "position": 1, "title": "Каких функций не хватает в Verifix?",
+    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
+  },
+  {
+    "key": "workarounds", "section_number": 5, "section_title": "Боли и пожелания",
+    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
+    "position": 2, "title": "Есть ли задачи, которые вы решаете в обход Verifix (Excel, мессенджеры, другой софт)? Какие?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "improvements", "section_number": 5, "section_title": "Боли и пожелания",
+    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
+    "position": 3, "title": "Что бы вы улучшили в первую очередь? (в том числе — что сейчас работает неудобно или раздражает)",
+    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
+  },
+  {
+    "key": "bug_frequency", "section_number": 5, "section_title": "Боли и пожелания",
+    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
+    "position": 4, "title": "Сталкивались ли вы с багами или сбоями за последние 3 месяца?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Нет", "Редко", "Часто"] },
+    "show_if": null
+  },
+  {
+    "key": "bug_description", "section_number": 5, "section_title": "Боли и пожелания",
+    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
+    "position": 5, "title": "Опишите, с какими именно багами или сбоями сталкивались",
+    "help_text": null, "type": "long_text", "required": false, "config": null,
+    "show_if": { "question_key": "bug_frequency", "values": ["Редко", "Часто"] }
+  },
+  {
+    "key": "interface_score", "section_number": 5, "section_title": "Боли и пожелания",
+    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
+    "position": 6, "title": "Интерфейс Verifix — удобный или запутанный?",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 1, "max": 5, "low_label": "Очень запутанный", "high_label": "Интуитивно понятный" },
+    "show_if": null
+  },
+  {
+    "key": "support_speed", "section_number": 6, "section_title": "Сервис и поддержка",
+    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
+    "position": 1, "title": "Скорость ответов поддержки Verifix",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 1, "max": 5, "low_label": "Очень медленно", "high_label": "Моментально" },
+    "show_if": null
+  },
+  {
+    "key": "support_quality", "section_number": 6, "section_title": "Сервис и поддержка",
+    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
+    "position": 2, "title": "Качество решения запросов поддержкой",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 1, "max": 5, "low_label": "Не решают", "high_label": "Решают всё с первого раза" },
+    "show_if": null
+  },
+  {
+    "key": "manager_score", "section_number": 6, "section_title": "Сервис и поддержка",
+    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
+    "position": 3, "title": "Как вы оцениваете работу вашего персонального менеджера?",
+    "help_text": null, "type": "scale", "required": true,
+    "config": { "min": 1, "max": 5, "low_label": "Плохо", "high_label": "Отлично" },
+    "show_if": null
+  },
+  {
+    "key": "comm_frequency", "section_number": 6, "section_title": "Сервис и поддержка",
+    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
+    "position": 4, "title": "Достаточна ли частота коммуникаций от Verifix?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Слишком редко", "Нормально", "Слишком часто"] },
+    "show_if": null
+  },
+  {
+    "key": "service_improvements", "section_number": 6, "section_title": "Сервис и поддержка",
+    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
+    "position": 5, "title": "Что бы вы улучшили в сервисе Verifix?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "alternatives", "section_number": 7, "section_title": "Будущее сотрудничества",
+    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
+    "position": 1, "title": "Рассматриваете ли вы альтернативы Verifix?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Нет", "Иногда смотрим", "Активно ищем замену"] },
+    "show_if": null
+  },
+  {
+    "key": "churn_reason", "section_number": 7, "section_title": "Будущее сотрудничества",
+    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
+    "position": 2, "title": "Если бы завтра пришлось отказаться от Verifix — какая была бы главная причина?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "retention_reason", "section_number": 7, "section_title": "Будущее сотрудничества",
+    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
+    "position": 3, "title": "Что удерживает вас в Verifix?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  },
+  {
+    "key": "switching_difficulty", "section_number": 7, "section_title": "Будущее сотрудничества",
+    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
+    "position": 4, "title": "Насколько сложно вам было бы перейти на другое решение?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": {
+      "options": ["Легко — до 2 недель", "Умеренно — 1–2 месяца", "Сложно — 3–6 месяцев",
+                  "Очень сложно — более полугода", "Никогда не оценивали / трудно сказать"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "renewal_intent", "section_number": 7, "section_title": "Будущее сотрудничества",
+    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
+    "position": 5, "title": "Планируете ли вы продлевать контракт в следующем периоде?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Точно да", "Скорее да", "Ещё не решили", "Скорее нет", "Точно нет"] },
+    "show_if": null
+  },
+  {
+    "key": "additional_modules", "section_number": 8, "section_title": "Расширение и референсы",
+    "section_help": "Что мы можем сделать вместе в будущем?",
+    "position": 1, "title": "Интересуют ли вас доп. модули, которые вы сейчас не используете?",
+    "help_text": null, "type": "checkbox", "required": false,
+    "config": {
+      "options": ["Verifix Perform (KPI, OKR, 360°)", "Verifix Recruit (ATS, массовый подбор)",
+                  "AI Assistant", "Forecasting (прогноз нагрузки)", "Нет, всё необходимое у меня уже есть"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "headcount_plans", "section_number": 8, "section_title": "Расширение и референсы",
+    "section_help": "Что мы можем сделать вместе в будущем?",
+    "position": 2, "title": "Планируете ли вы расширять команду в ближайшие 6 месяцев?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": {
+      "options": ["Да, значительно (+20% и больше)", "Умеренно (до +20%)",
+                  "Нет, штат останется прежним", "Планируем сокращения"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "reference_willingness", "section_number": 8, "section_title": "Расширение и референсы",
+    "section_help": "Что мы можем сделать вместе в будущем?",
+    "position": 3, "title": "Готовы ли вы выступить публичным референсом (кейс, отзыв, цитата на сайте)?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Да", "Возможно при определённых условиях", "Нет"] },
+    "show_if": null
+  },
+  {
+    "key": "video_willingness", "section_number": 8, "section_title": "Расширение и референсы",
+    "section_help": "Что мы можем сделать вместе в будущем?",
+    "position": 4, "title": "Готовы ли вы рассказать о Verifix на мероприятии или в видеоотзыве?",
+    "help_text": null, "type": "radio", "required": true,
+    "config": { "options": ["Да", "Возможно", "Нет"] },
+    "show_if": null
+  },
+  {
+    "key": "final_comment", "section_number": 8, "section_title": "Расширение и референсы",
+    "section_help": "Что мы можем сделать вместе в будущем?",
+    "position": 5, "title": "Хотите что-то добавить или передать команде Verifix?",
+    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+  }
+]

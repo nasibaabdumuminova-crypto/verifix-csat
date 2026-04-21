@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verifix — Ваше мнение о продукте и сервисе</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body class="page-public page-survey">
+  <div class="bg-glow"></div>
+
+  <main class="card card-survey">
+    <div class="brand">
+      <img src="/logo.png" alt="Verifix" class="brand-mark" />
+      <div class="brand-name">Verifix</div>
+    </div>
+
+    <div id="progressWrap" class="progress" hidden>
+      <div class="progress-label" id="progressLabel">Шаг 1</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div id="stepContainer" class="step"></div>
+
+    <div id="navBar" class="form-nav" hidden>
+      <button type="button" id="backBtn" class="btn-ghost">Назад</button>
+      <button type="button" id="nextBtn" class="btn-primary">Далее</button>
+    </div>
+
+    <div id="message" class="message" aria-live="polite"></div>
+  </main>
+
+<script>
+const STORAGE_KEY = 'verifix_survey_draft_v1';
+
+const state = {
+  questions: [],
+  steps: [],       // array of {type:'intro'|'identity'|'section'|'thanks', ...}
+  stepIdx: 0,
+  identity: { company_name: '', email: '' },
+  answers: {},     // key -> value
+};
+
+// ============ LOAD ============
+async function init() {
+  try {
+    const r = await fetch('/api/survey/questions');
+    const data = await r.json();
+    state.questions = data.questions || [];
+    buildSteps();
+    loadDraft();
+    render();
+  } catch (e) {
+    showError('Не удалось загрузить опросник. Обновите страницу.');
+  }
+}
+
+function buildSteps() {
+  const steps = [
+    { type: 'intro' },
+    { type: 'identity' },
+  ];
+  // Group questions by section
+  const bySection = new Map();
+  for (const q of state.questions) {
+    const key = q.section_number + '|' + q.section_title;
+    if (!bySection.has(key)) {
+      bySection.set(key, {
+        section_number: q.section_number,
+        section_title: q.section_title,
+        section_help: q.section_help,
+        questions: [],
+      });
+    }
+    bySection.get(key).questions.push(q);
+  }
+  const sections = [...bySection.values()].sort((a, b) => a.section_number - b.section_number);
+  for (const s of sections) {
+    steps.push({ type: 'section', ...s });
+  }
+  steps.push({ type: 'thanks' });
+  state.steps = steps;
+}
+
+// ============ DRAFT ============
+function saveDraft() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      identity: state.identity,
+      answers: state.answers,
+      stepIdx: state.stepIdx,
+    }));
+  } catch (e) {}
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.identity) state.identity = d.identity;
+    if (d.answers) state.answers = d.answers;
+    if (typeof d.stepIdx === 'number') state.stepIdx = Math.min(d.stepIdx, state.steps.length - 1);
+  } catch (e) {}
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+}
+
+// ============ RENDER ============
+function render() {
+  const container = document.getElementById('stepContainer');
+  const nav = document.getElementById('navBar');
+  const progress = document.getElementById('progressWrap');
+  const step = state.steps[state.stepIdx];
+
+  document.getElementById('message').textContent = '';
+  document.getElementById('message').className = 'message';
+
+  // Progress visible only during section + identity steps
+  const isWorkStep = step.type === 'identity' || step.type === 'section';
+  progress.hidden = !isWorkStep;
+  if (isWorkStep) {
+    const total = state.steps.filter((s) => s.type === 'identity' || s.type === 'section').length;
+    const idx = state.steps.slice(0, state.stepIdx + 1).filter((s) => s.type === 'identity' || s.type === 'section').length;
+    document.getElementById('progressFill').style.width = (idx / total * 100) + '%';
+    document.getElementById('progressLabel').textContent = `Шаг ${idx} из ${total}`;
+  }
+
+  nav.hidden = step.type === 'thanks';
+  document.getElementById('backBtn').style.visibility = state.stepIdx === 0 ? 'hidden' : 'visible';
+  document.getElementById('nextBtn').textContent = step.type === 'intro' ? 'Начать'
+    : isLastSection() ? 'Отправить' : 'Далее';
+
+  if (step.type === 'intro') container.innerHTML = renderIntro();
+  else if (step.type === 'identity') container.innerHTML = renderIdentity();
+  else if (step.type === 'section') container.innerHTML = renderSection(step);
+  else if (step.type === 'thanks') container.innerHTML = renderThanks();
+
+  bindStepEvents(step);
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function isLastSection() {
+  for (let i = state.stepIdx + 1; i < state.steps.length; i++) {
+    if (state.steps[i].type === 'section') return false;
+  }
+  return state.steps[state.stepIdx].type === 'section';
+}
+
+function renderIntro() {
+  return `
+    <h1>Ваше мнение о продукте и сервисе</h1>
+    <p class="subtitle">Опрос займёт ~15 минут. Ответы мы читаем лично и используем для развития продукта Verifix.</p>
+    <p class="subtitle">Название компании и email обязательны. Цитаты и публичные кейсы — только с вашего явного согласия.</p>
+  `;
+}
+
+function renderIdentity() {
+  const c = escapeAttr(state.identity.company_name || '');
+  const e = escapeAttr(state.identity.email || '');
+  return `
+    <h2 class="section-title">Начнём с контактов</h2>
+    <p class="section-help">Нам нужно знать, от кого обратная связь — это поможет вернуться к вам с уточнениями.</p>
+
+    <div class="q-block">
+      <label class="q-title" for="f_company">Название компании <span class="req">*</span></label>
+      <input type="text" id="f_company" class="text-input" maxlength="200" value="${c}" autocomplete="organization" />
+    </div>
+
+    <div class="q-block">
+      <label class="q-title" for="f_email">Ваш рабочий email <span class="req">*</span></label>
+      <input type="email" id="f_email" class="text-input" maxlength="200" value="${e}" autocomplete="email" />
+    </div>
+  `;
+}
+
+function renderSection(step) {
+  const visibleQuestions = step.questions.filter((q) => isQuestionVisible(q));
+  const help = step.section_help ? `<p class="section-help">${escapeHtml(step.section_help)}</p>` : '';
+  return `
+    <h2 class="section-title">${step.section_number}. ${escapeHtml(step.section_title)}</h2>
+    ${help}
+    ${visibleQuestions.map((q, i) => renderQuestion(q, step.section_number + '.' + (i + 1))).join('')}
+  `;
+}
+
+function renderQuestion(q, displayCode) {
+  const val = state.answers[q.key];
+  const required = q.required ? '<span class="req">*</span>' : '';
+  const helpText = q.help_text ? `<div class="q-help">${escapeHtml(q.help_text)}</div>` : '';
+  let body = '';
+
+  if (q.type === 'short_text') {
+    body = `<input type="text" class="text-input" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" />`;
+  } else if (q.type === 'long_text') {
+    body = `<textarea class="text-input" data-qkey="${q.key}" rows="3" maxlength="3000">${escapeHtml(val || '')}</textarea>`;
+  } else if (q.type === 'radio') {
+    const opts = (q.config && q.config.options) || [];
+    body = '<div class="options">' + opts.map((o, i) => {
+      const checked = val === o ? 'checked' : '';
+      return `
+        <label class="opt">
+          <input type="radio" name="${q.key}" value="${escapeAttr(o)}" data-qkey="${q.key}" ${checked} />
+          <span>${escapeHtml(o)}</span>
+        </label>`;
+    }).join('');
+    if (q.config && q.config.allow_other) {
+      const isOther = val && !opts.includes(val);
+      body += `
+        <label class="opt">
+          <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" ${isOther ? 'checked' : ''} />
+          <span>Другое:</span>
+          <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="свой вариант" />
+        </label>`;
+    }
+    body += '</div>';
+  } else if (q.type === 'checkbox') {
+    const opts = (q.config && q.config.options) || [];
+    const arr = Array.isArray(val) ? val : [];
+    body = '<div class="options">' + opts.map((o) => {
+      const checked = arr.includes(o) ? 'checked' : '';
+      return `
+        <label class="opt">
+          <input type="checkbox" value="${escapeAttr(o)}" data-qkey-multi="${q.key}" ${checked} />
+          <span>${escapeHtml(o)}</span>
+        </label>`;
+    }).join('') + '</div>';
+  } else if (q.type === 'scale') {
+    const c = q.config || {};
+    const min = c.min ?? 1, max = c.max ?? 5;
+    let items = '';
+    for (let i = min; i <= max; i++) {
+      const checked = String(val) === String(i) ? 'checked' : '';
+      items += `
+        <label class="scale-item">
+          <input type="radio" name="${q.key}" value="${i}" data-qkey="${q.key}" ${checked} />
+          <span class="scale-num">${i}</span>
+        </label>`;
+    }
+    body = `
+      <div class="scale">
+        <div class="scale-items">${items}</div>
+        <div class="scale-labels">
+          <span>${escapeHtml(c.low_label || '')}</span>
+          <span>${escapeHtml(c.high_label || '')}</span>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="q-block" data-q-key="${q.key}">
+      <div class="q-title">${displayCode}. ${escapeHtml(q.title)} ${required}</div>
+      ${helpText}
+      ${body}
+    </div>
+  `;
+}
+
+function renderThanks() {
+  return `
+    <h1>Спасибо!</h1>
+    <p class="subtitle">Ваши ответы получены. Если вы отметили готовность к контакту — наш менеджер свяжется с вами в течение 3 рабочих дней.</p>
+    <p class="subtitle">— Команда Verifix</p>
+  `;
+}
+
+// ============ VISIBILITY (branching) ============
+function isQuestionVisible(q) {
+  if (!q.show_if) return true;
+  const trigger = state.answers[q.show_if.question_key];
+  const values = Array.isArray(q.show_if.values) ? q.show_if.values : [];
+  return values.includes(trigger);
+}
+
+// ============ EVENTS ============
+function bindStepEvents(step) {
+  if (step.type === 'identity') {
+    document.getElementById('f_company').addEventListener('input', (e) => {
+      state.identity.company_name = e.target.value;
+      saveDraft();
+    });
+    document.getElementById('f_email').addEventListener('input', (e) => {
+      state.identity.email = e.target.value;
+      saveDraft();
+    });
+  }
+
+  // Text / textarea
+  document.querySelectorAll('[data-qkey]').forEach((el) => {
+    const key = el.dataset.qkey;
+    if (el.type === 'radio') {
+      el.addEventListener('change', () => {
+        if (!el.checked) return;
+        if (el.value === '__other__') {
+          const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
+          state.answers[key] = otherInput ? otherInput.value : '';
+        } else {
+          state.answers[key] = el.value;
+        }
+        saveDraft();
+        // Re-render only if branching target exists
+        if (dependentQuestionsExist(key)) render();
+      });
+    } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.addEventListener('input', () => {
+        state.answers[key] = el.value;
+        saveDraft();
+      });
+    }
+  });
+
+  // "Other" inline text input
+  document.querySelectorAll('[data-qkey-other]').forEach((el) => {
+    const key = el.dataset.qkeyOther;
+    el.addEventListener('input', () => {
+      const radio = document.querySelector(`input[name="${key}"][value="__other__"]`);
+      if (radio) radio.checked = true;
+      state.answers[key] = el.value;
+      saveDraft();
+    });
+  });
+
+  // Checkbox groups
+  document.querySelectorAll('[data-qkey-multi]').forEach((el) => {
+    el.addEventListener('change', () => {
+      const key = el.dataset.qkeyMulti;
+      const boxes = document.querySelectorAll(`[data-qkey-multi="${key}"]`);
+      state.answers[key] = Array.from(boxes).filter((b) => b.checked).map((b) => b.value);
+      saveDraft();
+    });
+  });
+
+  document.getElementById('backBtn').onclick = goBack;
+  document.getElementById('nextBtn').onclick = goNext;
+}
+
+function dependentQuestionsExist(triggerKey) {
+  return state.questions.some((q) => q.show_if && q.show_if.question_key === triggerKey);
+}
+
+// ============ NAVIGATION ============
+function goBack() {
+  if (state.stepIdx === 0) return;
+  state.stepIdx--;
+  saveDraft();
+  render();
+}
+
+async function goNext() {
+  const step = state.steps[state.stepIdx];
+
+  if (step.type === 'intro') {
+    state.stepIdx++;
+    saveDraft();
+    render();
+    return;
+  }
+
+  if (step.type === 'identity') {
+    const c = state.identity.company_name.trim();
+    const e = state.identity.email.trim();
+    if (!c) return showError('Укажите название компании');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return showError('Укажите корректный email');
+    state.stepIdx++;
+    saveDraft();
+    render();
+    return;
+  }
+
+  if (step.type === 'section') {
+    // Validate required
+    const visibleQs = step.questions.filter(isQuestionVisible);
+    for (const q of visibleQs) {
+      if (!q.required) continue;
+      const v = state.answers[q.key];
+      const empty = v === undefined || v === null || v === '' ||
+                    (Array.isArray(v) && v.length === 0);
+      if (empty) return showError('Пожалуйста, ответьте на все обязательные вопросы (*)');
+    }
+
+    if (isLastSection()) {
+      await submit();
+      return;
+    }
+    state.stepIdx++;
+    saveDraft();
+    render();
+  }
+}
+
+async function submit() {
+  const btn = document.getElementById('nextBtn');
+  btn.disabled = true;
+  btn.textContent = 'Отправляем…';
+
+  const answers = Object.keys(state.answers).map((key) => ({
+    question_key: key,
+    value: state.answers[key],
+  }));
+
+  try {
+    const r = await fetch('/api/survey/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_name: state.identity.company_name,
+        email: state.identity.email,
+        answers,
+      }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Ошибка отправки');
+    clearDraft();
+    state.stepIdx = state.steps.length - 1; // thanks
+    render();
+  } catch (e) {
+    showError(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Отправить';
+  }
+}
+
+// ============ HELPERS ============
+function showError(msg) {
+  const el = document.getElementById('message');
+  el.textContent = msg;
+  el.className = 'message error';
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+init();
+</script>
+<script src="/stars.js"></script>
+</body>
+</html>

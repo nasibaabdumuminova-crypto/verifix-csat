@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verifix — Admin · Опросник</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body class="page-admin">
+  <div class="bg-glow"></div>
+
+  <div id="loginScreen" class="card card-narrow">
+    <div class="brand">
+      <img src="/logo.png" alt="Verifix" class="brand-mark" />
+      <div class="brand-name">Verifix · Admin · Опросник</div>
+    </div>
+    <h2>Введите пароль</h2>
+    <form id="loginForm">
+      <input type="password" id="pwd" placeholder="Пароль" required />
+      <button type="submit" class="btn-primary">Войти</button>
+      <div id="loginErr" class="message error" style="display:none">Неверный пароль</div>
+    </form>
+  </div>
+
+  <main id="dashboard" class="dashboard" hidden>
+    <header class="dash-header">
+      <div class="brand">
+        <img src="/logo.png" alt="Verifix" class="brand-mark" />
+        <div class="brand-name">Опросник клиентов</div>
+      </div>
+      <div class="dash-actions">
+        <a href="/admin" class="btn-ghost">→ NPS Radar</a>
+        <a href="#" id="exportBtn" class="btn-ghost">Экспорт CSV</a>
+        <button id="logout" class="btn-ghost">Выйти</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="stats">Дашборд</button>
+      <button class="tab" data-tab="responses">Ответы</button>
+      <button class="tab" data-tab="questions">Редактор вопросов</button>
+    </nav>
+
+    <!-- ============ TAB: STATS ============ -->
+    <section class="tab-panel" data-panel="stats">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Всего ответов</div>
+          <div class="stat-value" id="s_total">—</div>
+        </div>
+        <div class="stat-card nps-card">
+          <div class="stat-label">NPS</div>
+          <div class="stat-value" id="s_nps">—</div>
+          <div class="nps-bar" id="s_npsBar"></div>
+          <div class="nps-legend" id="s_npsLegend"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CSAT продукт</div>
+          <div class="stat-value" id="s_csatP">—</div>
+          <div class="muted">шкала 1–5</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CSAT сервис</div>
+          <div class="stat-value" id="s_csatS">—</div>
+          <div class="muted">шкала 1–5</div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Интерфейс (удобство)</div>
+          <div class="stat-value" id="s_interface">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Скорость поддержки</div>
+          <div class="stat-value" id="s_suppSpeed">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Качество поддержки</div>
+          <div class="stat-value" id="s_suppQ">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Менеджер</div>
+          <div class="stat-value" id="s_mgr">—</div>
+        </div>
+      </div>
+
+      <div class="stats-grid dist-grid">
+        <div class="stat-card dist-card">
+          <div class="stat-label">Окупаемость (3.3)</div>
+          <div id="s_dist_roi" class="dist-list"></div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Намерение продлить (7.5)</div>
+          <div id="s_dist_renewal" class="dist-list"></div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Альтернативы (7.1)</div>
+          <div id="s_dist_alt" class="dist-list"></div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Частота багов (5.4)</div>
+          <div id="s_dist_bugs" class="dist-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TAB: RESPONSES ============ -->
+    <section class="tab-panel" data-panel="responses" hidden>
+      <div class="table-wrap">
+        <div class="filters">
+          <input type="text" id="respFilter" class="text-input" placeholder="Фильтр по компании или email…" />
+        </div>
+        <div id="respList" class="resp-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ TAB: QUESTIONS EDITOR ============ -->
+    <section class="tab-panel" data-panel="questions" hidden>
+      <div class="editor-header">
+        <h2>Редактор вопросов</h2>
+        <button id="addQuestionBtn" class="btn-primary">+ Добавить вопрос</button>
+      </div>
+      <div id="qEditorList" class="q-editor-list"></div>
+    </section>
+
+    <!-- Modal for adding/editing questions -->
+    <div id="modal" class="modal" hidden>
+      <div class="modal-card">
+        <button class="modal-close" id="modalClose">×</button>
+        <h3 id="modalTitle">Новый вопрос</h3>
+        <form id="modalForm">
+          <div class="field-row">
+            <label>Секция (номер)<input type="number" name="section_number" min="1" max="20" required /></label>
+            <label>Позиция<input type="number" name="position" min="1" max="99" /></label>
+          </div>
+          <label>Название секции<input type="text" name="section_title" required /></label>
+          <label>Подсказка секции (необязательно)<input type="text" name="section_help" /></label>
+          <label>Ключ (уникальный латинский id, напр. company_size)<input type="text" name="key" required pattern="[a-z0-9_]+" /></label>
+          <label>Текст вопроса<textarea name="title" rows="2" required></textarea></label>
+          <label>Подсказка (необязательно)<input type="text" name="help_text" /></label>
+          <div class="field-row">
+            <label>Тип
+              <select name="type" required>
+                <option value="short_text">Короткий текст</option>
+                <option value="long_text">Длинный текст</option>
+                <option value="radio">Один вариант (radio)</option>
+                <option value="checkbox">Несколько вариантов (checkbox)</option>
+                <option value="scale">Шкала</option>
+              </select>
+            </label>
+            <label class="inline-check"><input type="checkbox" name="required" /> Обязательный</label>
+          </div>
+          <div id="typeSpecific"></div>
+          <div id="showIfWrap">
+            <label>Показывать только если (ключ вопроса-триггера, необязательно)<input type="text" name="show_if_key" placeholder="напр. bug_frequency" /></label>
+            <label>Значения триггера через запятую<input type="text" name="show_if_values" placeholder="напр. Редко, Часто" /></label>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-ghost" id="modalCancel">Отмена</button>
+            <button type="submit" class="btn-primary">Сохранить</button>
+          </div>
+          <div id="modalErr" class="message error" style="display:none"></div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+<script>
+const password = { value: sessionStorage.getItem('csat_pwd') || '' };
+const state = { stats: null, responses: [], questions: [], editingId: null };
+
+const loginScreen = document.getElementById('loginScreen');
+const dashboard = document.getElementById('dashboard');
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  password.value = document.getElementById('pwd').value;
+  if (await loadAll()) {
+    sessionStorage.setItem('csat_pwd', password.value);
+    loginScreen.hidden = true;
+    dashboard.hidden = false;
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+});
+
+document.getElementById('logout').addEventListener('click', () => {
+  sessionStorage.removeItem('csat_pwd');
+  location.reload();
+});
+
+// ========== TABS ==========
+document.querySelectorAll('.tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach((p) => p.hidden = p.dataset.panel !== btn.dataset.tab);
+  });
+});
+
+// ========== LOAD ==========
+async function authedFetch(url, opts = {}) {
+  opts.headers = { ...(opts.headers || {}), 'x-admin-password': password.value };
+  if (opts.body && !opts.headers['Content-Type']) opts.headers['Content-Type'] = 'application/json';
+  return fetch(url, opts);
+}
+
+async function loadAll() {
+  try {
+    const [stats, responses, questions] = await Promise.all([
+      authedFetch('/api/admin/survey/stats').then((r) => r.status === 401 ? null : r.json()),
+      authedFetch('/api/admin/survey/responses').then((r) => r.status === 401 ? null : r.json()),
+      authedFetch('/api/admin/survey/questions').then((r) => r.status === 401 ? null : r.json()),
+    ]);
+    if (!stats || !responses || !questions) return false;
+    state.stats = stats;
+    state.responses = responses.responses;
+    state.responsesQuestions = responses.questions;
+    state.questions = questions.questions;
+    renderStats();
+    renderResponses();
+    renderQuestions();
+    return true;
+  } catch (e) { console.error(e); return false; }
+}
+
+// ========== STATS ==========
+function renderStats() {
+  const s = state.stats;
+  if (!s) return;
+  const fmt = (v) => v == null ? '—' : v;
+  document.getElementById('s_total').textContent = s.totalResponses;
+  document.getElementById('s_nps').textContent = s.nps.score == null ? '—' : s.nps.score;
+  document.getElementById('s_csatP').textContent = fmt(s.csatProduct);
+  document.getElementById('s_csatS').textContent = fmt(s.csatService);
+  document.getElementById('s_interface').textContent = fmt(s.scales.interface_score);
+  document.getElementById('s_suppSpeed').textContent = fmt(s.scales.support_speed);
+  document.getElementById('s_suppQ').textContent = fmt(s.scales.support_quality);
+  document.getElementById('s_mgr').textContent = fmt(s.scales.manager_score);
+
+  // NPS bar
+  const total = s.nps.count || 1;
+  const pPct = s.nps.promoters / total * 100;
+  const nPct = s.nps.neutrals / total * 100;
+  const dPct = s.nps.detractors / total * 100;
+  document.getElementById('s_npsBar').innerHTML = `
+    <div class="bar-seg bar-det" style="width:${dPct}%"></div>
+    <div class="bar-seg bar-neu" style="width:${nPct}%"></div>
+    <div class="bar-seg bar-pro" style="width:${pPct}%"></div>
+  `;
+  document.getElementById('s_npsLegend').innerHTML = `
+    <span><i class="dot det"></i>Детракторы: ${s.nps.detractors}</span>
+    <span><i class="dot neu"></i>Нейтралы: ${s.nps.neutrals}</span>
+    <span><i class="dot pro"></i>Промоутеры: ${s.nps.promoters}</span>
+  `;
+
+  fillDist('s_dist_roi', s.distributions.roi_category);
+  fillDist('s_dist_renewal', s.distributions.renewal_intent);
+  fillDist('s_dist_alt', s.distributions.alternatives);
+  fillDist('s_dist_bugs', s.distributions.bug_frequency);
+}
+
+function fillDist(id, dist) {
+  const el = document.getElementById(id);
+  const entries = Object.entries(dist || {}).sort((a, b) => b[1] - a[1]);
+  const total = entries.reduce((s, [, n]) => s + n, 0);
+  if (!total) { el.innerHTML = '<div class="muted">Нет данных</div>'; return; }
+  el.innerHTML = entries.map(([k, n]) => {
+    const pct = Math.round(n / total * 100);
+    return `
+      <div class="dist-row">
+        <div class="dist-label">${escapeHtml(k)}</div>
+        <div class="dist-bar"><div class="dist-fill" style="width:${pct}%"></div></div>
+        <div class="dist-n">${n} · ${pct}%</div>
+      </div>`;
+  }).join('');
+}
+
+// ========== RESPONSES ==========
+const respFilter = document.getElementById('respFilter');
+respFilter.addEventListener('input', renderResponses);
+
+function renderResponses() {
+  const f = (respFilter.value || '').toLowerCase().trim();
+  const list = state.responses.filter((r) =>
+    !f || r.company_name.toLowerCase().includes(f) || r.email.toLowerCase().includes(f)
+  );
+  const el = document.getElementById('respList');
+  if (!list.length) { el.innerHTML = '<div class="empty">Пока нет ответов</div>'; return; }
+
+  const qByKey = new Map(state.responsesQuestions.map((q) => [q.key, q]));
+
+  el.innerHTML = list.map((r) => {
+    const d = new Date(r.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+    const answers = r.answers.map((a) => {
+      const q = qByKey.get(a.question_key);
+      const title = q ? q.title : a.question_key;
+      const v = Array.isArray(a.value) ? a.value.join(', ') : (a.value === null || a.value === undefined ? '—' : String(a.value));
+      return `<div class="a-row"><div class="a-q">${escapeHtml(title)}</div><div class="a-v">${escapeHtml(v)}</div></div>`;
+    }).join('');
+    return `
+      <details class="resp-item">
+        <summary>
+          <strong>${escapeHtml(r.company_name)}</strong>
+          <span class="muted">· ${escapeHtml(r.email)}</span>
+          <span class="muted resp-date">${d}</span>
+        </summary>
+        <div class="resp-body">${answers}</div>
+      </details>`;
+  }).join('');
+}
+
+// ========== QUESTIONS EDITOR ==========
+function renderQuestions() {
+  const el = document.getElementById('qEditorList');
+  const groups = new Map();
+  for (const q of state.questions) {
+    const k = q.section_number + '|' + q.section_title;
+    if (!groups.has(k)) groups.set(k, { section_number: q.section_number, section_title: q.section_title, items: [] });
+    groups.get(k).items.push(q);
+  }
+  const sections = [...groups.values()].sort((a, b) => a.section_number - b.section_number);
+
+  el.innerHTML = sections.map((s) => `
+    <div class="q-section">
+      <div class="q-section-head">${s.section_number}. ${escapeHtml(s.section_title)}</div>
+      ${s.items.map((q, i) => `
+        <div class="q-row">
+          <div class="q-row-code">${s.section_number}.${i + 1}</div>
+          <div class="q-row-body">
+            <div class="q-row-title">${escapeHtml(q.title)} ${q.required ? '<span class="req">*</span>' : ''}</div>
+            <div class="q-row-meta">
+              <span class="tag">${typeLabel(q.type)}</span>
+              <span class="muted">key: ${q.key}</span>
+              ${q.show_if ? `<span class="tag tag-branch">условный (зависит от ${q.show_if.question_key})</span>` : ''}
+            </div>
+          </div>
+          <div class="q-row-actions">
+            <button class="btn-ghost" data-edit="${q.id}">Ред.</button>
+            <button class="btn-ghost danger" data-del="${q.id}">Удалить</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  el.querySelectorAll('[data-edit]').forEach((b) =>
+    b.addEventListener('click', () => openModal(state.questions.find((x) => x.id == b.dataset.edit))));
+  el.querySelectorAll('[data-del]').forEach((b) =>
+    b.addEventListener('click', () => deleteQuestion(+b.dataset.del)));
+}
+
+function typeLabel(t) {
+  return { short_text: 'Текст', long_text: 'Длинный текст', radio: 'Один из', checkbox: 'Несколько', scale: 'Шкала' }[t] || t;
+}
+
+async function deleteQuestion(id) {
+  if (!confirm('Удалить вопрос? Ответы на него сохранятся в ранее собранных анкетах.')) return;
+  const r = await authedFetch(`/api/admin/survey/questions/${id}`, { method: 'DELETE' });
+  if (r.ok) await loadAll();
+}
+
+// ========== MODAL ==========
+const modal = document.getElementById('modal');
+const typeSpecific = document.getElementById('typeSpecific');
+document.getElementById('addQuestionBtn').addEventListener('click', () => openModal(null));
+document.getElementById('modalClose').addEventListener('click', () => closeModal());
+document.getElementById('modalCancel').addEventListener('click', () => closeModal());
+
+document.querySelector('#modalForm [name="type"]').addEventListener('change', (e) => renderTypeSpecific(e.target.value));
+
+function openModal(q) {
+  state.editingId = q ? q.id : null;
+  document.getElementById('modalTitle').textContent = q ? 'Редактировать вопрос' : 'Новый вопрос';
+  const f = document.getElementById('modalForm');
+  f.reset();
+  document.getElementById('modalErr').style.display = 'none';
+
+  f.section_number.value = q ? q.section_number : '';
+  f.section_title.value = q ? q.section_title : '';
+  f.section_help.value = q ? (q.section_help || '') : '';
+  f.position.value = q ? q.position : '';
+  f.key.value = q ? q.key : '';
+  f.title.value = q ? q.title : '';
+  f.help_text.value = q ? (q.help_text || '') : '';
+  f.type.value = q ? q.type : 'short_text';
+  f.required.checked = q ? !!q.required : false;
+  if (q && q.show_if) {
+    f.show_if_key.value = q.show_if.question_key || '';
+    f.show_if_values.value = Array.isArray(q.show_if.values) ? q.show_if.values.join(', ') : '';
+  }
+  renderTypeSpecific(f.type.value, q && q.config);
+  modal.hidden = false;
+}
+
+function closeModal() { modal.hidden = true; state.editingId = null; }
+
+function renderTypeSpecific(type, existingConfig) {
+  const cfg = existingConfig || {};
+  if (type === 'radio' || type === 'checkbox') {
+    typeSpecific.innerHTML = `
+      <label>Варианты (каждый с новой строки)
+        <textarea name="options" rows="5">${(cfg.options || []).map(escapeHtml).join('\n')}</textarea>
+      </label>
+      ${type === 'radio' ? `<label class="inline-check"><input type="checkbox" name="allow_other" ${cfg.allow_other ? 'checked' : ''} /> Разрешить «Другое»</label>` : ''}
+    `;
+  } else if (type === 'scale') {
+    typeSpecific.innerHTML = `
+      <div class="field-row">
+        <label>Мин<input type="number" name="min" value="${cfg.min ?? 1}" /></label>
+        <label>Макс<input type="number" name="max" value="${cfg.max ?? 5}" /></label>
+      </div>
+      <label>Подпись слева<input type="text" name="low_label" value="${escapeAttr(cfg.low_label || '')}" /></label>
+      <label>Подпись справа<input type="text" name="high_label" value="${escapeAttr(cfg.high_label || '')}" /></label>
+    `;
+  } else {
+    typeSpecific.innerHTML = '';
+  }
+}
+
+document.getElementById('modalForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const fd = new FormData(f);
+  const type = fd.get('type');
+  let config = null;
+  if (type === 'radio' || type === 'checkbox') {
+    const opts = (fd.get('options') || '').toString().split('\n').map((x) => x.trim()).filter(Boolean);
+    config = { options: opts };
+    if (type === 'radio' && fd.get('allow_other')) config.allow_other = true;
+  } else if (type === 'scale') {
+    config = {
+      min: parseInt(fd.get('min'), 10),
+      max: parseInt(fd.get('max'), 10),
+      low_label: fd.get('low_label') || '',
+      high_label: fd.get('high_label') || '',
+    };
+  }
+  const show_if_key = (fd.get('show_if_key') || '').toString().trim();
+  const show_if_values = (fd.get('show_if_values') || '').toString().split(',').map((x) => x.trim()).filter(Boolean);
+  const show_if = show_if_key && show_if_values.length ? { question_key: show_if_key, values: show_if_values } : null;
+
+  const body = {
+    key: fd.get('key'),
+    section_number: parseInt(fd.get('section_number'), 10),
+    section_title: fd.get('section_title'),
+    section_help: fd.get('section_help') || null,
+    position: fd.get('position') ? parseInt(fd.get('position'), 10) : null,
+    title: fd.get('title'),
+    help_text: fd.get('help_text') || null,
+    type,
+    required: !!fd.get('required'),
+    config,
+    show_if,
+  };
+
+  const url = state.editingId ? `/api/admin/survey/questions/${state.editingId}` : '/api/admin/survey/questions';
+  const method = state.editingId ? 'PUT' : 'POST';
+  const r = await authedFetch(url, { method, body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!r.ok) {
+    const err = document.getElementById('modalErr');
+    err.textContent = data.error || 'Ошибка';
+    err.style.display = 'block';
+    return;
+  }
+  closeModal();
+  await loadAll();
+});
+
+// ========== EXPORT ==========
+document.getElementById('exportBtn').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const r = await authedFetch('/api/admin/survey/export.csv');
+  if (!r.ok) return alert('Не удалось экспортировать');
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'verifix_survey.csv'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ========== HELPERS ==========
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+// ========== AUTO-LOGIN ==========
+(async () => {
+  if (password.value) {
+    if (await loadAll()) {
+      loginScreen.hidden = true;
+      dashboard.hidden = false;
+    } else {
+      sessionStorage.removeItem('csat_pwd');
+    }
+  }
+})();
+</script>
+<script src="/stars.js"></script>
+</body>
+</html>
