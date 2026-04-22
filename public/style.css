@@ -30,7 +30,12 @@ html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Inter: stylistic sets for clean readable digits & letters */
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   color: var(--c-text);
   background: linear-gradient(135deg, var(--c-bg-1) 0%, var(--c-bg-2) 50%, var(--c-bg-3) 100%);
   background-attachment: fixed;
@@ -1021,4 +1026,171 @@ textarea.text-input.big { min-height: 140px; }
   min-width: clamp(120px, 13vw, 160px);
   padding: clamp(12px, 1.4vw, 16px) clamp(22px, 2.2vw, 30px);
   font-size: clamp(15px, 1.25vw, 17px);
+}
+
+/* ================================================================== */
+/* ========== DESKTOP TYPOGRAPHY (>= 900px)                   ======== */
+/* Fixed, research-based sizes for comfortable reading.              */
+/* References: Stripe, Linear, Vercel, Typeform, Apple, Medium.       */
+/* Mobile stays fluid via clamp() from earlier blocks.                */
+/* ================================================================== */
+@media (min-width: 900px) {
+  /* Card proportions — narrower card = shorter lines = faster reading */
+  .page-survey-single .card-survey {
+    max-width: 840px;
+    padding: 56px 64px;
+  }
+
+  /* Step 1 of 6 · Section name  —  meta label */
+  .page-survey-single .progress-meta {
+    font-size: 15px;
+    letter-spacing: 0.005em;
+    margin-bottom: 12px;
+  }
+
+  /* Hero screen titles (intro / thanks / lang) */
+  .page-survey-single .screen-title {
+    font-size: 40px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+
+  /* Intro body paragraphs */
+  .page-survey-single .subtitle {
+    font-size: 20px;
+    line-height: 1.55;
+    max-width: 640px;
+    color: rgba(255, 255, 255, 0.88);
+    margin: 0 0 14px;
+  }
+
+  /* Step help block (покрытый плашкой) */
+  .page-survey-single .step-help {
+    font-size: 18px;
+    line-height: 1.55;
+    padding: 16px 20px;
+    max-width: 720px;
+    color: rgba(255, 255, 255, 0.86);
+    margin: 0 0 26px;
+  }
+
+  /* The main question title */
+  .page-survey-single .q-title-big {
+    font-size: 30px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    max-width: 760px;
+    margin: 0 0 14px;
+  }
+  .page-survey-single .q-code {
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+  }
+
+  /* Question-specific help */
+  .page-survey-single .q-help-big {
+    font-size: 17px;
+    line-height: 1.55;
+    max-width: 720px;
+    color: rgba(255, 255, 255, 0.80);
+    margin: 0 0 22px;
+  }
+
+  /* Input fields */
+  .page-survey-single .text-input.big {
+    font-size: 18px;
+    line-height: 1.45;
+    padding: 18px 22px;
+    border-radius: 14px;
+  }
+  .page-survey-single textarea.text-input.big { min-height: 140px; }
+
+  /* Dropdown — slightly larger so selected value reads comfortably */
+  .page-survey-single .select-input.big {
+    font-size: 19px;
+    padding-right: 52px;
+  }
+
+  /* Radio & checkbox options */
+  .page-survey-single .opt-big {
+    font-size: 17.5px;
+    line-height: 1.4;
+    padding: 18px 22px;
+    border-radius: 14px;
+    gap: 16px;
+  }
+  .page-survey-single .opt-big input[type="radio"],
+  .page-survey-single .opt-big input[type="checkbox"] {
+    width: 22px; height: 22px;
+  }
+
+  /* Scale (NPS 0–10, CSAT 1–5) */
+  .page-survey-single .scale-big .scale-num {
+    font-size: 22px;
+    padding: 22px 0;
+    border-radius: 14px;
+  }
+  .page-survey-single .scale-big .scale-labels {
+    font-size: 14px;
+    margin-top: 14px;
+  }
+
+  /* Nav buttons */
+  .page-survey-single .form-nav { margin-top: 32px; }
+  .page-survey-single .form-nav .btn-primary {
+    font-size: 17px;
+    padding: 15px 32px;
+    min-width: 180px;
+    letter-spacing: 0;
+  }
+  .page-survey-single .form-nav .btn-ghost {
+    font-size: 16px;
+    padding: 13px 26px;
+    min-width: 130px;
+  }
+
+  /* Lang chip in corner — subtle */
+  .page-survey-single .lang-corner { font-size: 12px; }
+
+  /* === LANG PICKER on desktop === */
+  .lang-opt {
+    padding: 28px 18px;
+    min-height: 128px;
+  }
+  .lang-code { font-size: 30px; }
+  .lang-name { font-size: 14px; }
+
+  /* === INTRO card variation for consistency === */
+  .card-survey { max-width: 840px; }
+}
+
+/* Large desktops (>= 1440px): no further font growth — just breathing room */
+@media (min-width: 1440px) {
+  .page-survey-single .card-survey { padding: 64px 72px; }
+}
+
+/* ================================================================== */
+/* ========== ADMIN DASHBOARD TYPOGRAPHY (desktop)            ======== */
+/* ================================================================== */
+@media (min-width: 900px) {
+  .dashboard { padding: 40px 32px 80px; }
+  .dash-header .brand-name { font-size: 20px; }
+  .tab { font-size: 16px; padding: 12px 20px; }
+
+  .stat-label   { font-size: 13px; letter-spacing: 0.08em; }
+  .stat-value   { font-size: 52px; line-height: 1; }
+  .stats-grid .stat-value { font-size: 44px; }
+
+  .dist-row     { font-size: 15px; }
+  .dist-label   { line-height: 1.4; }
+  .dist-n       { font-size: 13.5px; }
+
+  .nps-legend   { font-size: 14.5px; gap: 22px; }
+
+  .a-row        { font-size: 15.5px; }
+  .a-q          { line-height: 1.45; }
+  .a-v          { line-height: 1.55; }
 }
