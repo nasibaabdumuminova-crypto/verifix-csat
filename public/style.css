@@ -347,8 +347,8 @@ input[type="password"]:focus { border-color: var(--c-violet); }
   line-height: 1.5;
 }
 .subtitle {
-  font-size: clamp(14px, 1.2vw, 17px);
-  line-height: 1.55;
+  font-size: clamp(18px, 2vw, 32px);
+  line-height: 1.45;
 }
 
 .progress { margin: 16px 0 24px; }
@@ -422,14 +422,18 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   cursor: pointer;
   background-image: linear-gradient(45deg, transparent 50%, var(--c-muted) 50%),
                     linear-gradient(135deg, var(--c-muted) 50%, transparent 50%);
-  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
-  background-size: 5px 5px, 5px 5px;
+  background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%;
+  background-size: 7px 7px, 7px 7px;
   background-repeat: no-repeat;
-  padding-right: 40px;
+  padding-right: 48px;
 }
 .select-input option {
   background: #241a5a;
   color: var(--c-text);
+  font-size: 20px;  /* Chrome/Edge may ignore this; browser-styled dropdown lists */
+}
+.select-input.big {
+  font-size: clamp(17px, 1.8vw, 25px);
 }
 
 .options { display: flex; flex-direction: column; gap: 10px; }
@@ -914,8 +918,8 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
-  font-size: clamp(11.5px, 0.95vw, 13.5px);
+  margin-bottom: 10px;
+  font-size: clamp(14px, 1.3vw, 20px);
   color: var(--c-muted);
   flex-wrap: wrap;
 }
@@ -942,13 +946,13 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 
 .step-help {
   color: var(--c-muted);
-  font-size: clamp(12.5px, 1.05vw, 15px);
-  margin: 0 0 clamp(14px, 1.6vw, 20px);
-  line-height: 1.5;
-  padding: 10px 14px;
+  font-size: clamp(16px, 1.9vw, 30px);
+  margin: 0 0 clamp(18px, 2vw, 28px);
+  line-height: 1.45;
+  padding: clamp(12px, 1.4vw, 18px) clamp(14px, 1.6vw, 22px);
   border-left: 3px solid var(--c-violet);
   background: rgba(138,84,242,0.08);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 12px 12px 0;
 }
 
 .q-title-big {
@@ -965,9 +969,9 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 }
 .q-help-big {
   color: var(--c-muted);
-  font-size: clamp(13px, 1.15vw, 15.5px);
+  font-size: clamp(15px, 1.5vw, 22px);
   line-height: 1.5;
-  margin: 0 0 clamp(14px, 1.8vw, 22px);
+  margin: 0 0 clamp(16px, 2vw, 26px);
 }
 .q-body { margin-top: clamp(10px, 1.4vw, 18px); }
 
