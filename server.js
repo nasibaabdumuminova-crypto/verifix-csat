@@ -145,6 +145,30 @@ async function initDb() {
     }
     console.log(`Seeded ${SEED_QUESTIONS.length} survey questions (v9 trilingual)`);
   }
+
+  // Idempotent post-seed migration: if a seeded question's type changed between
+  // versions (e.g. position: short_text → select), update the existing row so
+  // prod reflects the latest seed without requiring a manual DB reset.
+  // Only updates rows where the stored type differs from the seed type.
+  let migrated = 0;
+  for (const q of SEED_QUESTIONS) {
+    const r = await pool.query(
+      `UPDATE survey_questions
+         SET type = $1,
+             config = $2::jsonb,
+             help_text = $3::jsonb
+       WHERE key = $4 AND type <> $1 AND deleted_at IS NULL
+       RETURNING id`,
+      [
+        q.type,
+        q.config ? JSON.stringify(q.config) : null,
+        q.help_text ? JSON.stringify(q.help_text) : null,
+        q.key,
+      ]
+    );
+    migrated += r.rowCount;
+  }
+  if (migrated) console.log(`Post-seed type migration: updated ${migrated} question(s)`);
   console.log('DB ready');
 }
 
