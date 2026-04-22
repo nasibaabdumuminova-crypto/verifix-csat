@@ -6,21 +6,30 @@
 <title>Verifix — Ваше мнение о продукте и сервисе</title>
 <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="page-public page-survey">
+<body class="page-public page-survey page-survey-single">
   <div class="bg-glow"></div>
 
   <main class="card card-survey">
-    <div class="brand">
-      <img src="/logo.png" alt="Verifix" class="brand-mark" />
-      <div class="brand-name">Verifix</div>
+    <div class="survey-top">
+      <div class="brand">
+        <img src="/logo.png" alt="Verifix" class="brand-mark" />
+        <div class="brand-name">Verifix</div>
+      </div>
+      <div id="langCorner" class="lang-corner" hidden>
+        <span class="lang-current" id="langCurrentLabel"></span>
+        <button type="button" class="btn-ghost lang-change" id="langChangeBtn">⇅</button>
+      </div>
     </div>
 
-    <div id="progressWrap" class="progress" hidden>
-      <div class="progress-label" id="progressLabel">Шаг 1</div>
+    <div id="progressWrap" class="progress progress-big" hidden>
+      <div class="progress-meta">
+        <span id="progressStep" class="progress-step"></span>
+        <span id="progressCount" class="progress-count"></span>
+      </div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     </div>
 
-    <div id="stepContainer" class="step"></div>
+    <div id="screen" class="screen"></div>
 
     <div id="navBar" class="form-nav" hidden>
       <button type="button" id="backBtn" class="btn-ghost">Назад</button>
@@ -32,17 +41,16 @@
 
 <script>
 /* ============================================================
- *  Verifix survey — trilingual (RU / UZ-Cyr / UZ-Lat)
+ *  Verifix survey v10 — one question per screen
  * ============================================================ */
-const STORAGE_KEY = 'verifix_survey_draft_v9';
+const STORAGE_KEY = 'verifix_survey_draft_v10';
 const LANG_KEY = 'verifix_survey_lang';
 
-// UI strings for all non-question UI elements.
 const UI = {
   ru: {
     selectLang: 'Выберите язык',
     surveyTitle: 'Verifix — Ваше мнение о продукте и сервисе',
-    intro: 'Опрос займёт ~10 минут. Все ответы мы читаем лично и используем для развития Verifix.',
+    intro: 'Опрос займёт ~7 минут. Все ответы мы читаем лично и используем для развития Verifix.',
     introNote: 'Название компании, ФИО и телефон обязательны — это нужно, чтобы менеджер мог с Вами связаться.',
     start: 'Начать',
     back: 'Назад',
@@ -50,21 +58,22 @@ const UI = {
     submit: 'Отправить',
     sending: 'Отправляем…',
     stepOf: (i, n) => `Шаг ${i} из ${n}`,
+    questionOf: (i, n) => `Вопрос ${i} из ${n}`,
     required: 'Обязательно для заполнения',
     fillField: 'Пожалуйста, заполните это поле',
-    invalidEmail: 'Введите корректный email',
     invalidPhone: 'Введите корректный номер телефона',
-    fillAllRequired: 'Пожалуйста, ответьте на все обязательные вопросы (*)',
-    otherLabel: 'Другое:',
+    fillRequired: 'Пожалуйста, ответьте на этот вопрос',
+    otherLabel: 'Другое',
     otherPlaceholder: 'свой вариант',
     inputPlaceholder: 'Введите ответ…',
+    selectPlaceholder: '— Выберите из списка',
     thanks: 'Спасибо!',
     thanksBody: 'Ваша обратная связь помогает нам делать Verifix лучше. Мы внимательно прочитаем каждый ответ и вернёмся к Вам с итогами.',
   },
   uz_cyr: {
     selectLang: 'Тилни танланг',
     surveyTitle: 'Verifix — маҳсулот ва хизмат ҳақида фикрингиз',
-    intro: 'Сўровнома ~10 дақиқа давом этади. Ҳар бир жавобни шахсан ўқиб, Verifix-ни ривожлантириш учун фойдаланамиз.',
+    intro: 'Сўровнома ~7 дақиқа давом этади. Ҳар бир жавобни шахсан ўқиб, Verifix-ни ривожлантириш учун фойдаланамиз.',
     introNote: 'Компания номи, Ф.И.Ш. ва телефон рақами мажбурий — менежер сиз билан боғланиши учун керак.',
     start: 'Бошлаш',
     back: 'Орқага',
@@ -72,21 +81,22 @@ const UI = {
     submit: 'Юбориш',
     sending: 'Юборилмоқда…',
     stepOf: (i, n) => `${i}-қадам (${n} дан)`,
+    questionOf: (i, n) => `Савол ${i} / ${n}`,
     required: 'Тўлдириш шарт',
     fillField: 'Илтимос, ушбу майдонни тўлдиринг',
-    invalidEmail: 'Тўғри email киритинг',
     invalidPhone: 'Тўғри телефон рақамини киритинг',
-    fillAllRequired: 'Илтимос, барча мажбурий саволларга жавоб беринг (*)',
-    otherLabel: 'Бошқа:',
+    fillRequired: 'Илтимос, ушбу саволга жавоб беринг',
+    otherLabel: 'Бошқа',
     otherPlaceholder: 'ўз вариантингиз',
     inputPlaceholder: 'Жавобни киритинг…',
+    selectPlaceholder: '— Рўйхатдан танланг',
     thanks: 'Раҳмат!',
     thanksBody: 'Сизнинг фикр-мулоҳазаларингиз Verifix-ни янада яхшилашга ёрдам беради. Биз ҳар бир жавобни диққат билан ўқиб чиқамиз ва натижалар билан сизга қайтамиз.',
   },
   uz_lat: {
     selectLang: 'Tilni tanlang',
     surveyTitle: 'Verifix — mahsulot va xizmat haqida fikringiz',
-    intro: 'Soʻrovnoma ~10 daqiqa davom etadi. Har bir javobni shaxsan oʻqib, Verifix-ni rivojlantirish uchun foydalanamiz.',
+    intro: 'Soʻrovnoma ~7 daqiqa davom etadi. Har bir javobni shaxsan oʻqib, Verifix-ni rivojlantirish uchun foydalanamiz.',
     introNote: 'Kompaniya nomi, F.I.SH. va telefon raqami majburiy — menejer siz bilan bogʻlanishi uchun kerak.',
     start: 'Boshlash',
     back: 'Orqaga',
@@ -94,14 +104,15 @@ const UI = {
     submit: 'Yuborish',
     sending: 'Yuborilmoqda…',
     stepOf: (i, n) => `${i}-qadam (${n} dan)`,
+    questionOf: (i, n) => `Savol ${i} / ${n}`,
     required: 'Toʻldirish shart',
     fillField: 'Iltimos, ushbu maydonni toʻldiring',
-    invalidEmail: 'Toʻgʻri email kiriting',
     invalidPhone: 'Toʻgʻri telefon raqamini kiriting',
-    fillAllRequired: 'Iltimos, barcha majburiy savollarga javob bering (*)',
-    otherLabel: 'Boshqa:',
+    fillRequired: 'Iltimos, ushbu savolga javob bering',
+    otherLabel: 'Boshqa',
     otherPlaceholder: 'oʻz variantingiz',
     inputPlaceholder: 'Javobni kiriting…',
+    selectPlaceholder: '— Roʻyxatdan tanlang',
     thanks: 'Rahmat!',
     thanksBody: 'Sizning fikr-mulohazalaringiz Verifix-ni yanada yaxshilashga yordam beradi. Biz har bir javobni diqqat bilan oʻqib chiqamiz va natijalar bilan sizga qaytamiz.',
   },
@@ -113,11 +124,13 @@ const LANG_NAMES = {
   uz_lat: 'Oʻzbekcha (Lotin)',
 };
 
+const IDENTITY_KEYS = new Set(['company_name', 'contact_name', 'position', 'phone']);
+
 const state = {
   lang: null,
   questions: [],
-  steps: [],
-  stepIdx: 0,
+  /** cursor: 'lang' | 'intro' | 'thanks' | key-of-visible-question */
+  cursor: 'lang',
   identity: { company_name: '', contact_name: '', position: '', phone: '' },
   answers: {},
 };
@@ -129,131 +142,229 @@ async function init() {
     state.lang = saved && UI[saved] ? saved : null;
     const r = await fetch('/api/survey/questions');
     const data = await r.json();
-    state.questions = data.questions || [];
-    buildSteps();
+    state.questions = (data.questions || []).sort(
+      (a, b) => a.step_number - b.step_number || a.position - b.position || a.id - b.id
+    );
     loadDraft();
     render();
   } catch (e) {
-    document.getElementById('stepContainer').innerHTML =
+    document.getElementById('screen').innerHTML =
       '<p class="subtitle">Не удалось загрузить опросник. Обновите страницу.</p>';
   }
-}
-
-function buildSteps() {
-  const steps = [{ type: 'lang' }, { type: 'intro' }];
-  const byStep = new Map();
-  for (const q of state.questions) {
-    if (!byStep.has(q.step_number)) {
-      byStep.set(q.step_number, {
-        step_number: q.step_number,
-        step_title: q.step_title,
-        step_help: q.step_help,
-        questions: [],
-      });
-    }
-    byStep.get(q.step_number).questions.push(q);
-  }
-  const stepArr = [...byStep.values()].sort((a, b) => a.step_number - b.step_number);
-  for (const s of stepArr) steps.push({ type: 'step', ...s });
-  steps.push({ type: 'thanks' });
-  state.steps = steps;
 }
 
 // ============ DRAFT ============
 function saveDraft() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      identity: state.identity, answers: state.answers, stepIdx: state.stepIdx,
+      identity: state.identity,
+      answers: state.answers,
+      cursor: state.cursor,
     }));
     if (state.lang) localStorage.setItem(LANG_KEY, state.lang);
   } catch (e) {}
 }
-
 function loadDraft() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) { if (state.lang) state.cursor = 'intro'; return; }
     const d = JSON.parse(raw);
     if (d.identity) state.identity = d.identity;
     if (d.answers) state.answers = d.answers;
-    if (typeof d.stepIdx === 'number') state.stepIdx = Math.min(d.stepIdx, state.steps.length - 1);
+    if (d.cursor) state.cursor = d.cursor;
+    if (!state.lang) state.cursor = 'lang';
   } catch (e) {}
 }
+function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
 
-function clearDraft() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-}
-
-// ============ i18n helpers ============
+// ============ i18n ============
 function t(x) {
   if (x == null) return '';
   if (typeof x === 'string') return x;
   return x[state.lang] || x.ru || Object.values(x)[0] || '';
 }
-
 function optionsOf(q) {
   const c = q.config || {};
   const key = 'options_' + state.lang;
   const arr = c[key] || c.options_ru || c.options || [];
-  // Also keep RU-canonical for submission alignment
   return { localized: arr, canonical: c.options_ru || c.options || arr };
 }
 
+// ============ BRANCHING / VISIBILITY ============
+function isQuestionVisible(q) {
+  if (!q.show_if) return true;
+  return evalShowIf(q.show_if);
+}
+function evalShowIf(rule) {
+  const trigger = answerFor(rule.question_key);
+  const op = rule.op || 'in';
+  if (trigger === undefined || trigger === null || trigger === '') return false;
+  if (op === 'in') {
+    const arr = rule.values || [];
+    if (Array.isArray(trigger)) return trigger.some((x) => arr.includes(x));
+    return arr.includes(trigger);
+  }
+  if (op === 'eq') return trigger === rule.value;
+  const n = Number(trigger);
+  if (!Number.isFinite(n)) return false;
+  if (op === 'lte') return n <= Number(rule.value);
+  if (op === 'gte') return n >= Number(rule.value);
+  if (op === 'lt')  return n < Number(rule.value);
+  if (op === 'gt')  return n > Number(rule.value);
+  return false;
+}
+
+function answerFor(key) {
+  if (IDENTITY_KEYS.has(key)) return state.identity[key];
+  return state.answers[key];
+}
+
+// Flat visible list of questions — recomputed on each access
+function visibleQuestions() {
+  return state.questions.filter(isQuestionVisible);
+}
+
+// ============ NAVIGATION ============
+function currentQuestion() {
+  const list = visibleQuestions();
+  return list.find((q) => q.key === state.cursor) || null;
+}
+
+function goNext() {
+  const ui = UI[state.lang] || UI.ru;
+  if (state.cursor === 'lang') {
+    if (!state.lang) return;
+    state.cursor = 'intro'; saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  if (state.cursor === 'intro') {
+    const list = visibleQuestions();
+    state.cursor = list.length ? list[0].key : 'thanks';
+    saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  if (state.cursor === 'thanks') return;
+
+  // validate current
+  const q = currentQuestion();
+  if (!q) return;
+  if (q.required) {
+    const val = answerFor(q.key);
+    const empty = val === undefined || val === null || val === '' ||
+                  (Array.isArray(val) && val.length === 0);
+    if (empty) return showError(ui.fillRequired);
+    if (q.key === 'phone' && !/^[\+\-\d\s()]{5,}$/.test(String(val))) {
+      return showError(ui.invalidPhone);
+    }
+  }
+
+  const list = visibleQuestions();
+  const i = list.findIndex((x) => x.key === q.key);
+  if (i < 0 || i === list.length - 1) {
+    submit();
+    return;
+  }
+  state.cursor = list[i + 1].key;
+  saveDraft(); render({ scrollTop: true });
+}
+
+function goBack() {
+  if (state.cursor === 'lang') return;
+  if (state.cursor === 'intro') {
+    state.cursor = 'lang';
+    saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  if (state.cursor === 'thanks') {
+    state.cursor = 'intro';
+    saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  const list = visibleQuestions();
+  const i = list.findIndex((x) => x.key === state.cursor);
+  if (i <= 0) { state.cursor = 'intro'; saveDraft(); render({ scrollTop: true }); return; }
+  state.cursor = list[i - 1].key;
+  saveDraft(); render({ scrollTop: true });
+}
+
 // ============ RENDER ============
-// opts.scrollTo — whether to scroll to top (true on step change, false on in-step re-render)
 function render(opts = {}) {
-  const container = document.getElementById('stepContainer');
+  const ui = state.lang ? UI[state.lang] : UI.ru;
+  const screen = document.getElementById('screen');
   const nav = document.getElementById('navBar');
   const progress = document.getElementById('progressWrap');
-  const step = state.steps[state.stepIdx] || state.steps[0];
-  const ui = state.lang ? UI[state.lang] : UI.ru;
+  const langCorner = document.getElementById('langCorner');
 
   document.getElementById('message').textContent = '';
   document.getElementById('message').className = 'message';
 
-  const isWorkStep = step.type === 'step';
-  progress.hidden = !isWorkStep;
-  if (isWorkStep) {
-    const allSteps = state.steps.filter((s) => s.type === 'step');
-    const total = allSteps.length;
-    const idx = allSteps.findIndex((s) => s === step) + 1;
-    document.getElementById('progressFill').style.width = (idx / total * 100) + '%';
-    document.getElementById('progressLabel').textContent = ui.stepOf(idx, total);
+  // Lang corner visibility
+  if (state.cursor === 'lang' || !state.lang) {
+    langCorner.hidden = true;
+  } else {
+    langCorner.hidden = false;
+    document.getElementById('langCurrentLabel').textContent = LANG_NAMES[state.lang];
   }
 
-  nav.hidden = step.type === 'thanks' || step.type === 'lang';
-  document.getElementById('backBtn').style.visibility =
-    (state.stepIdx === 0 || step.type === 'intro') ? 'hidden' : 'visible';
-  document.getElementById('backBtn').textContent = ui.back;
+  const onQuestion = state.cursor !== 'lang' && state.cursor !== 'intro' && state.cursor !== 'thanks';
+
+  // Progress
+  if (onQuestion) {
+    const list = visibleQuestions();
+    const idx = list.findIndex((q) => q.key === state.cursor);
+    const current = idx >= 0 ? list[idx] : null;
+    if (!current) {
+      // cursor got lost (branching made it invisible) — bail to first visible
+      state.cursor = list.length ? list[0].key : 'thanks';
+      return render({ scrollTop: true });
+    }
+    const stepsTotal = new Set(state.questions.map((q) => q.step_number)).size;
+    progress.hidden = false;
+    document.getElementById('progressFill').style.width =
+      ((idx + 1) / list.length * 100) + '%';
+    document.getElementById('progressStep').textContent =
+      ui.stepOf(current.step_number, stepsTotal) + ' · ' + t(current.step_title);
+    document.getElementById('progressCount').textContent =
+      ui.questionOf(idx + 1, list.length);
+  } else {
+    progress.hidden = true;
+  }
+
+  // Nav
+  const isThanks = state.cursor === 'thanks';
+  const isLang = state.cursor === 'lang';
+  nav.hidden = isThanks || isLang;
+  const backBtn = document.getElementById('backBtn');
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.disabled = false;
-  nextBtn.textContent = isLastStep() ? ui.submit
-    : (step.type === 'intro' ? ui.start : ui.next);
+  backBtn.style.visibility = (state.cursor === 'intro' || isLang) ? 'hidden' : 'visible';
+  backBtn.textContent = ui.back;
 
-  if (step.type === 'lang') container.innerHTML = renderLangPicker();
-  else if (step.type === 'intro') container.innerHTML = renderIntro();
-  else if (step.type === 'step') container.innerHTML = renderStep(step);
-  else if (step.type === 'thanks') container.innerHTML = renderThanks();
+  // Next button label
+  if (state.cursor === 'intro') nextBtn.textContent = ui.start;
+  else if (onQuestion) {
+    const list = visibleQuestions();
+    const idx = list.findIndex((q) => q.key === state.cursor);
+    nextBtn.textContent = idx === list.length - 1 ? ui.submit : ui.next;
+  } else nextBtn.textContent = ui.next;
 
-  bindStepEvents(step);
-  if (opts.scrollTo !== false) {
-    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Content
+  if (isLang) screen.innerHTML = renderLangPicker();
+  else if (state.cursor === 'intro') screen.innerHTML = renderIntro();
+  else if (isThanks) screen.innerHTML = renderThanks();
+  else screen.innerHTML = renderQuestion(currentQuestion());
+
+  bindEvents();
+
+  if (opts.scrollTop !== false) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-}
-
-function isLastStep() {
-  const step = state.steps[state.stepIdx];
-  if (step.type !== 'step') return false;
-  for (let i = state.stepIdx + 1; i < state.steps.length; i++) {
-    if (state.steps[i].type === 'step') return false;
-  }
-  return true;
 }
 
 function renderLangPicker() {
   const titles = { ru: UI.ru.selectLang, uz_cyr: UI.uz_cyr.selectLang, uz_lat: UI.uz_lat.selectLang };
   return `
-    <h1>${titles.ru} · ${titles.uz_cyr} · ${titles.uz_lat}</h1>
+    <h1 class="screen-title">${titles.ru} · ${titles.uz_cyr} · ${titles.uz_lat}</h1>
     <div class="lang-options">
       <button type="button" class="lang-opt" data-lang="ru">
         <div class="lang-code">RU</div>
@@ -273,129 +384,69 @@ function renderLangPicker() {
 
 function renderIntro() {
   const ui = UI[state.lang];
-  const c = escapeAttr(state.identity.company_name || '');
-  const cn = escapeAttr(state.identity.contact_name || '');
-  const p = escapeAttr(state.identity.position || '');
-  const ph = escapeAttr(state.identity.phone || '');
   return `
-    <div class="lang-header">
-      <span class="lang-current">${LANG_NAMES[state.lang]}</span>
-      <button type="button" class="btn-ghost lang-change" id="langChangeBtn">⇅</button>
-    </div>
-    <h1>${escapeHtml(ui.surveyTitle)}</h1>
+    <h1 class="screen-title">${escapeHtml(ui.surveyTitle)}</h1>
     <p class="subtitle">${escapeHtml(ui.intro)}</p>
     <p class="subtitle">${escapeHtml(ui.introNote)}</p>
   `;
 }
 
-function renderStep(step) {
+function renderThanks() {
   const ui = UI[state.lang];
-  const stepTitle = t(step.step_title);
-  const stepHelp = step.step_help ? t(step.step_help) : '';
-  const visible = step.questions.filter(isQuestionVisible);
-  let body = visible.map((q, i) => renderQuestion(q, step.step_number + '.' + (i + 1))).join('');
-  // Step 1 (contacts) pre-pended with identity fields
-  if (step.step_number === 1 && !visible.some((q) => q.key === 'company_name')) {
-    // Shouldn't happen with current seed — identity is handled per-question
-  }
   return `
-    <div class="lang-header">
-      <span class="lang-current">${LANG_NAMES[state.lang]}</span>
-      <button type="button" class="btn-ghost lang-change" id="langChangeBtn">⇅</button>
-    </div>
-    <h2 class="section-title">${step.step_number}. ${escapeHtml(stepTitle)}</h2>
-    ${stepHelp ? `<p class="section-help">${escapeHtml(stepHelp)}</p>` : ''}
-    ${body}
+    <h1 class="screen-title">${escapeHtml(ui.thanks)}</h1>
+    <p class="subtitle">${escapeHtml(ui.thanksBody)}</p>
   `;
 }
 
-function renderQuestion(q, displayCode) {
-  const val = state.answers[q.key];
-  const required = q.required ? '<span class="req">*</span>' : '';
-  const helpText = q.help_text ? `<div class="q-help">${escapeHtml(t(q.help_text))}</div>` : '';
-  const title = escapeHtml(t(q.title));
+function renderQuestion(q) {
   const ui = UI[state.lang];
+  const list = visibleQuestions();
+  const idx = list.findIndex((x) => x.key === q.key);
+  const displayCode = q.step_number + '.' + (positionInStep(q, list) + 1);
+
+  const val = answerFor(q.key);
+  const required = q.required ? '<span class="req">*</span>' : '';
+  const helpText = q.help_text ? `<p class="q-help-big">${escapeHtml(t(q.help_text))}</p>` : '';
+  const stepHelp = q.position === positionInStep(q, list) + 1 || idx === 0 || list[idx - 1].step_number !== q.step_number;
+  // Note: we show step help on the first visible question of each step
+  const showStepHelp = idx === 0 || list[idx - 1].step_number !== q.step_number;
+  const stepHelpBlock = (showStepHelp && q.step_help)
+    ? `<p class="step-help">${escapeHtml(t(q.step_help))}</p>` : '';
+
   let body = '';
 
-  // Identity fields go to state.identity, not answers
-  const IS_IDENTITY = q.key === 'company_name' || q.key === 'contact_name' || q.key === 'position' || q.key === 'phone';
-  if (IS_IDENTITY && q.type === 'select') {
-    const { localized, canonical } = optionsOf(q);
-    const allowOther = q.config && q.config.allow_other;
-    const cur = state.identity[q.key] || '';
-    const isOther = cur && !canonical.includes(cur);
-    const selectedCanonical = isOther ? '__other__' : cur;
-    let options = `<option value="">${escapeHtml('— ' + ui.inputPlaceholder.replace('…',''))}</option>`;
-    localized.forEach((label, i) => {
-      const cv = canonical[i];
-      const sel = cv === selectedCanonical ? 'selected' : '';
-      options += `<option value="${escapeAttr(cv)}" ${sel}>${escapeHtml(label)}</option>`;
-    });
-    if (allowOther) {
-      options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}</option>`;
-    }
-    body = `<select class="text-input select-input" data-identity-select="${q.key}">${options}</select>`;
-    if (allowOther) {
-      body += `<input type="text" class="text-input inline-other-under" data-identity-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? cur : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
-    }
-    return `
-      <div class="q-block" data-q-key="${q.key}">
-        <div class="q-title">${displayCode}. ${title} ${required}</div>
-        ${helpText}
-        ${body}
-      </div>`;
-  }
-  if (IS_IDENTITY) {
+  // Identity select (position-as-dropdown)
+  const isIdentity = IDENTITY_KEYS.has(q.key);
+  if (isIdentity && q.type === 'select') {
+    body = renderSelect(q, state.identity[q.key] || '', 'data-identity-select');
+  } else if (isIdentity) {
     const inputType = q.key === 'phone' ? 'tel' : 'text';
     const v = escapeAttr(state.identity[q.key] || '');
-    body = `<input type="${inputType}" class="text-input" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" />`;
-    return `
-      <div class="q-block" data-q-key="${q.key}">
-        <div class="q-title">${displayCode}. ${title} ${required}</div>
-        ${helpText}
-        ${body}
-      </div>`;
-  }
-
-  if (q.type === 'short_text') {
-    body = `<input type="text" class="text-input" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" />`;
+    body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
+  } else if (q.type === 'short_text') {
+    body = `<input type="text" class="text-input big" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
   } else if (q.type === 'long_text') {
-    body = `<textarea class="text-input" data-qkey="${q.key}" rows="3" maxlength="3000" placeholder="${escapeAttr(ui.inputPlaceholder)}">${escapeHtml(val || '')}</textarea>`;
+    body = `<textarea class="text-input big" data-qkey="${q.key}" rows="5" maxlength="3000" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus>${escapeHtml(val || '')}</textarea>`;
   } else if (q.type === 'select') {
-    const { localized, canonical } = optionsOf(q);
-    const allowOther = q.config && q.config.allow_other;
-    const isOther = val && !canonical.includes(val) && val !== '';
-    const selectedCanonical = isOther ? '__other__' : (val || '');
-    let options = `<option value="">${escapeHtml('— ' + ui.inputPlaceholder.replace('…',''))}</option>`;
-    localized.forEach((label, i) => {
-      const cv = canonical[i];
-      const sel = cv === selectedCanonical ? 'selected' : '';
-      options += `<option value="${escapeAttr(cv)}" ${sel}>${escapeHtml(label)}</option>`;
-    });
-    if (allowOther) {
-      options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}</option>`;
-    }
-    body = `<select class="text-input select-input" data-qkey="${q.key}">${options}</select>`;
-    if (allowOther) {
-      body += `<input type="text" class="text-input inline-other-under" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
-    }
+    body = renderSelect(q, val || '', 'data-qkey');
   } else if (q.type === 'radio') {
     const { localized, canonical } = optionsOf(q);
-    body = '<div class="options">' + localized.map((label, i) => {
-      const canonicalVal = canonical[i];
-      const checked = val === canonicalVal ? 'checked' : '';
+    body = '<div class="options options-big">' + localized.map((label, i) => {
+      const cv = canonical[i];
+      const checked = val === cv ? 'checked' : '';
       return `
-        <label class="opt">
-          <input type="radio" name="${q.key}" value="${escapeAttr(canonicalVal)}" data-qkey="${q.key}" ${checked} />
+        <label class="opt opt-big">
+          <input type="radio" name="${q.key}" value="${escapeAttr(cv)}" data-qkey="${q.key}" ${checked} />
           <span>${escapeHtml(label)}</span>
         </label>`;
     }).join('');
     if (q.config && q.config.allow_other) {
       const isOther = val && !canonical.includes(val);
       body += `
-        <label class="opt">
+        <label class="opt opt-big">
           <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" ${isOther ? 'checked' : ''} />
-          <span>${escapeHtml(ui.otherLabel)}</span>
+          <span>${escapeHtml(ui.otherLabel)}:</span>
           <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" />
         </label>`;
     }
@@ -403,12 +454,12 @@ function renderQuestion(q, displayCode) {
   } else if (q.type === 'checkbox') {
     const { localized, canonical } = optionsOf(q);
     const arr = Array.isArray(val) ? val : [];
-    body = '<div class="options">' + localized.map((label, i) => {
-      const canonicalVal = canonical[i];
-      const checked = arr.includes(canonicalVal) ? 'checked' : '';
+    body = '<div class="options options-big">' + localized.map((label, i) => {
+      const cv = canonical[i];
+      const checked = arr.includes(cv) ? 'checked' : '';
       return `
-        <label class="opt">
-          <input type="checkbox" value="${escapeAttr(canonicalVal)}" data-qkey-multi="${q.key}" ${checked} />
+        <label class="opt opt-big">
+          <input type="checkbox" value="${escapeAttr(cv)}" data-qkey-multi="${q.key}" ${checked} />
           <span>${escapeHtml(label)}</span>
         </label>`;
     }).join('') + '</div>';
@@ -421,13 +472,13 @@ function renderQuestion(q, displayCode) {
     for (let i = min; i <= max; i++) {
       const checked = String(val) === String(i) ? 'checked' : '';
       items += `
-        <label class="scale-item">
+        <label class="scale-item scale-item-big">
           <input type="radio" name="${q.key}" value="${i}" data-qkey="${q.key}" ${checked} />
           <span class="scale-num">${i}</span>
         </label>`;
     }
     body = `
-      <div class="scale">
+      <div class="scale scale-big">
         <div class="scale-items">${items}</div>
         <div class="scale-labels">
           <span>${escapeHtml(low)}</span>
@@ -437,83 +488,75 @@ function renderQuestion(q, displayCode) {
   }
 
   return `
-    <div class="q-block" data-q-key="${q.key}">
-      <div class="q-title">${displayCode}. ${title} ${required}</div>
-      ${helpText}
-      ${body}
-    </div>
+    ${stepHelpBlock}
+    <h2 class="q-title-big">
+      <span class="q-code">${displayCode}.</span>
+      ${escapeHtml(t(q.title))} ${required}
+    </h2>
+    ${helpText}
+    <div class="q-body">${body}</div>
   `;
 }
 
-function renderThanks() {
+function renderSelect(q, currentVal, attrName) {
   const ui = UI[state.lang];
-  return `
-    <h1>${escapeHtml(ui.thanks)}</h1>
-    <p class="subtitle">${escapeHtml(ui.thanksBody)}</p>
-  `;
-}
-
-// ============ VISIBILITY (branching) ============
-function isQuestionVisible(q) {
-  if (!q.show_if) return true;
-  return evalShowIf(q.show_if);
-}
-
-function evalShowIf(rule) {
-  if (!rule) return true;
-  const trigger = state.answers[rule.question_key];
-  const op = rule.op || 'in';
-  if (trigger === undefined || trigger === null || trigger === '') return false;
-  if (op === 'in') {
-    const arr = rule.values || [];
-    if (Array.isArray(trigger)) return trigger.some((x) => arr.includes(x));
-    return arr.includes(trigger);
+  const { localized, canonical } = optionsOf(q);
+  const allowOther = q.config && q.config.allow_other;
+  const isOther = currentVal && !canonical.includes(currentVal);
+  const selectedCanonical = isOther ? '__other__' : (currentVal || '');
+  let options = `<option value="">${escapeHtml(ui.selectPlaceholder)}</option>`;
+  localized.forEach((label, i) => {
+    const cv = canonical[i];
+    const sel = cv === selectedCanonical ? 'selected' : '';
+    options += `<option value="${escapeAttr(cv)}" ${sel}>${escapeHtml(label)}</option>`;
+  });
+  if (allowOther) {
+    options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}…</option>`;
   }
-  if (op === 'eq') return trigger === rule.value;
-  const n = Number(trigger);
-  if (!Number.isFinite(n)) return false;
-  if (op === 'lte') return n <= Number(rule.value);
-  if (op === 'gte') return n >= Number(rule.value);
-  if (op === 'lt') return n < Number(rule.value);
-  if (op === 'gt') return n > Number(rule.value);
-  return false;
+  let out = `<select class="text-input big select-input" ${attrName}="${q.key}">${options}</select>`;
+  if (allowOther) {
+    const otherAttr = attrName === 'data-identity-select' ? 'data-identity-other' : 'data-qkey-other';
+    out += `<input type="text" class="text-input big inline-other-under" ${otherAttr}="${q.key}" maxlength="200" value="${escapeAttr(isOther ? currentVal : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
+  }
+  return out;
+}
+
+function positionInStep(q, list) {
+  const step = list.filter((x) => x.step_number === q.step_number);
+  return step.findIndex((x) => x.key === q.key);
 }
 
 // ============ EVENTS ============
-function bindStepEvents(step) {
-  // Lang picker
-  if (step.type === 'lang') {
-    document.querySelectorAll('[data-lang]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        state.lang = btn.dataset.lang;
-        document.documentElement.lang =
-          state.lang === 'ru' ? 'ru' : (state.lang === 'uz_cyr' ? 'uz-Cyrl' : 'uz-Latn');
-        saveDraft();
-        state.stepIdx = 1;
-        render();
-      });
+function bindEvents() {
+  // Language picker buttons
+  document.querySelectorAll('[data-lang]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.lang = btn.dataset.lang;
+      document.documentElement.lang =
+        state.lang === 'ru' ? 'ru' : (state.lang === 'uz_cyr' ? 'uz-Cyrl' : 'uz-Latn');
+      saveDraft();
+      state.cursor = 'intro';
+      render({ scrollTop: true });
     });
-    return;
-  }
+  });
 
-  // Language change button (visible on any screen except lang picker)
   const lcb = document.getElementById('langChangeBtn');
-  if (lcb) {
-    lcb.addEventListener('click', () => {
-      state.stepIdx = 0; saveDraft(); render();
-    });
-  }
+  if (lcb) lcb.addEventListener('click', () => {
+    state.cursor = 'lang'; saveDraft(); render({ scrollTop: true });
+  });
 
   // Identity inputs
   document.querySelectorAll('[data-identity]').forEach((el) => {
     const k = el.dataset.identity;
     el.addEventListener('input', () => {
-      state.identity[k] = el.value;
-      saveDraft();
+      state.identity[k] = el.value; saveDraft();
     });
+    if (el.tagName === 'INPUT' && el.type !== 'radio') {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); goNext(); }
+      });
+    }
   });
-
-  // Identity select (position may be a dropdown)
   document.querySelectorAll('[data-identity-select]').forEach((el) => {
     const k = el.dataset.identitySelect;
     el.addEventListener('change', () => {
@@ -533,12 +576,11 @@ function bindStepEvents(step) {
     el.addEventListener('input', () => {
       const sel = document.querySelector(`[data-identity-select="${k}"]`);
       if (sel) sel.value = '__other__';
-      state.identity[k] = el.value;
-      saveDraft();
+      state.identity[k] = el.value; saveDraft();
     });
   });
 
-  // Text/radio/textarea/select
+  // Answer inputs
   document.querySelectorAll('[data-qkey]').forEach((el) => {
     const key = el.dataset.qkey;
     if (el.type === 'radio') {
@@ -552,7 +594,6 @@ function bindStepEvents(step) {
           state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
         }
         saveDraft();
-        if (dependentExists(key)) render({ scrollTo: false });
       });
     } else if (el.tagName === 'SELECT') {
       el.addEventListener('change', () => {
@@ -565,12 +606,13 @@ function bindStepEvents(step) {
           state.answers[key] = el.value;
         }
         saveDraft();
-        if (dependentExists(key)) render({ scrollTo: false });
       });
     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.addEventListener('input', () => {
-        state.answers[key] = el.value;
-        saveDraft();
+        state.answers[key] = el.value; saveDraft();
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && el.tagName === 'INPUT') { e.preventDefault(); goNext(); }
       });
     }
   });
@@ -578,14 +620,11 @@ function bindStepEvents(step) {
   document.querySelectorAll('[data-qkey-other]').forEach((el) => {
     const key = el.dataset.qkeyOther;
     el.addEventListener('input', () => {
-      // Radio case
       const radio = document.querySelector(`input[name="${key}"][value="__other__"]`);
       if (radio) radio.checked = true;
-      // Select case — ensure the select stays on __other__
       const sel = document.querySelector(`select[data-qkey="${key}"]`);
       if (sel) sel.value = '__other__';
-      state.answers[key] = el.value;
-      saveDraft();
+      state.answers[key] = el.value; saveDraft();
     });
   });
 
@@ -602,55 +641,20 @@ function bindStepEvents(step) {
   document.getElementById('nextBtn').onclick = goNext;
 }
 
-function dependentExists(triggerKey) {
-  return state.questions.some((q) => q.show_if && q.show_if.question_key === triggerKey);
-}
-
-// ============ NAVIGATION ============
-function goBack() {
-  if (state.stepIdx <= 1) { state.stepIdx = 1; render(); return; }
-  state.stepIdx--;
-  saveDraft(); render();
-}
-
-async function goNext() {
-  const step = state.steps[state.stepIdx];
-  const ui = UI[state.lang];
-
-  if (step.type === 'intro') {
-    state.stepIdx++;
-    saveDraft(); render(); return;
-  }
-
-  if (step.type === 'step') {
-    const visible = step.questions.filter(isQuestionVisible);
-    for (const q of visible) {
-      if (!q.required) continue;
-      let v;
-      if (q.key === 'company_name' || q.key === 'contact_name' || q.key === 'position' || q.key === 'phone') {
-        v = state.identity[q.key];
-      } else {
-        v = state.answers[q.key];
-      }
-      const empty = v === undefined || v === null || v === '' ||
-                    (Array.isArray(v) && v.length === 0);
-      if (empty) return showError(ui.fillAllRequired);
-      if (q.key === 'phone' && !/^[\+\-\d\s()]{5,}$/.test(String(v))) {
-        return showError(ui.invalidPhone);
-      }
-    }
-
-    if (isLastStep()) { await submit(); return; }
-    state.stepIdx++;
-    saveDraft(); render();
-  }
-}
-
+// ============ SUBMIT ============
 async function submit() {
   const ui = UI[state.lang];
   const btn = document.getElementById('nextBtn');
   btn.disabled = true;
   btn.textContent = ui.sending;
+
+  // Also validate identity before submit (in case user navigated by clicking back through them)
+  if (!state.identity.company_name?.trim() || !state.identity.contact_name?.trim() ||
+      !/^[\+\-\d\s()]{5,}$/.test(state.identity.phone || '')) {
+    btn.disabled = false;
+    btn.textContent = ui.submit;
+    return showError(ui.fillRequired);
+  }
 
   const payload = {
     company_name: state.identity.company_name,
@@ -673,8 +677,8 @@ async function submit() {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Ошибка отправки');
     clearDraft();
-    state.stepIdx = state.steps.length - 1;
-    render();
+    state.cursor = 'thanks';
+    render({ scrollTop: true });
   } catch (e) {
     showError(e.message);
     btn.disabled = false;
@@ -688,7 +692,6 @@ function showError(msg) {
   el.textContent = msg;
   el.className = 'message error';
 }
-
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
