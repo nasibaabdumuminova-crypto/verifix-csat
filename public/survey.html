@@ -31,19 +31,102 @@
   </main>
 
 <script>
-const STORAGE_KEY = 'verifix_survey_draft_v1';
+/* ============================================================
+ *  Verifix survey — trilingual (RU / UZ-Cyr / UZ-Lat)
+ * ============================================================ */
+const STORAGE_KEY = 'verifix_survey_draft_v9';
+const LANG_KEY = 'verifix_survey_lang';
+
+// UI strings for all non-question UI elements.
+const UI = {
+  ru: {
+    selectLang: 'Выберите язык',
+    surveyTitle: 'Verifix — Ваше мнение о продукте и сервисе',
+    intro: 'Опрос займёт ~10 минут. Все ответы мы читаем лично и используем для развития Verifix.',
+    introNote: 'Название компании, ФИО и телефон обязательны — это нужно, чтобы менеджер мог с Вами связаться.',
+    start: 'Начать',
+    back: 'Назад',
+    next: 'Далее',
+    submit: 'Отправить',
+    sending: 'Отправляем…',
+    stepOf: (i, n) => `Шаг ${i} из ${n}`,
+    required: 'Обязательно для заполнения',
+    fillField: 'Пожалуйста, заполните это поле',
+    invalidEmail: 'Введите корректный email',
+    invalidPhone: 'Введите корректный номер телефона',
+    fillAllRequired: 'Пожалуйста, ответьте на все обязательные вопросы (*)',
+    otherLabel: 'Другое:',
+    otherPlaceholder: 'свой вариант',
+    inputPlaceholder: 'Введите ответ…',
+    thanks: 'Спасибо!',
+    thanksBody: 'Ваша обратная связь помогает нам делать Verifix лучше. Мы внимательно прочитаем каждый ответ и вернёмся к Вам с итогами.',
+  },
+  uz_cyr: {
+    selectLang: 'Тилни танланг',
+    surveyTitle: 'Verifix — маҳсулот ва хизмат ҳақида фикрингиз',
+    intro: 'Сўровнома ~10 дақиқа давом этади. Ҳар бир жавобни шахсан ўқиб, Verifix-ни ривожлантириш учун фойдаланамиз.',
+    introNote: 'Компания номи, Ф.И.Ш. ва телефон рақами мажбурий — менежер сиз билан боғланиши учун керак.',
+    start: 'Бошлаш',
+    back: 'Орқага',
+    next: 'Кейинги',
+    submit: 'Юбориш',
+    sending: 'Юборилмоқда…',
+    stepOf: (i, n) => `${i}-қадам (${n} дан)`,
+    required: 'Тўлдириш шарт',
+    fillField: 'Илтимос, ушбу майдонни тўлдиринг',
+    invalidEmail: 'Тўғри email киритинг',
+    invalidPhone: 'Тўғри телефон рақамини киритинг',
+    fillAllRequired: 'Илтимос, барча мажбурий саволларга жавоб беринг (*)',
+    otherLabel: 'Бошқа:',
+    otherPlaceholder: 'ўз вариантингиз',
+    inputPlaceholder: 'Жавобни киритинг…',
+    thanks: 'Раҳмат!',
+    thanksBody: 'Сизнинг фикр-мулоҳазаларингиз Verifix-ни янада яхшилашга ёрдам беради. Биз ҳар бир жавобни диққат билан ўқиб чиқамиз ва натижалар билан сизга қайтамиз.',
+  },
+  uz_lat: {
+    selectLang: 'Tilni tanlang',
+    surveyTitle: 'Verifix — mahsulot va xizmat haqida fikringiz',
+    intro: 'Soʻrovnoma ~10 daqiqa davom etadi. Har bir javobni shaxsan oʻqib, Verifix-ni rivojlantirish uchun foydalanamiz.',
+    introNote: 'Kompaniya nomi, F.I.SH. va telefon raqami majburiy — menejer siz bilan bogʻlanishi uchun kerak.',
+    start: 'Boshlash',
+    back: 'Orqaga',
+    next: 'Keyingi',
+    submit: 'Yuborish',
+    sending: 'Yuborilmoqda…',
+    stepOf: (i, n) => `${i}-qadam (${n} dan)`,
+    required: 'Toʻldirish shart',
+    fillField: 'Iltimos, ushbu maydonni toʻldiring',
+    invalidEmail: 'Toʻgʻri email kiriting',
+    invalidPhone: 'Toʻgʻri telefon raqamini kiriting',
+    fillAllRequired: 'Iltimos, barcha majburiy savollarga javob bering (*)',
+    otherLabel: 'Boshqa:',
+    otherPlaceholder: 'oʻz variantingiz',
+    inputPlaceholder: 'Javobni kiriting…',
+    thanks: 'Rahmat!',
+    thanksBody: 'Sizning fikr-mulohazalaringiz Verifix-ni yanada yaxshilashga yordam beradi. Biz har bir javobni diqqat bilan oʻqib chiqamiz va natijalar bilan sizga qaytamiz.',
+  },
+};
+
+const LANG_NAMES = {
+  ru: 'Русский',
+  uz_cyr: 'Ўзбекча (Кирилл)',
+  uz_lat: 'Oʻzbekcha (Lotin)',
+};
 
 const state = {
+  lang: null,
   questions: [],
-  steps: [],       // array of {type:'intro'|'identity'|'section'|'thanks', ...}
+  steps: [],
   stepIdx: 0,
-  identity: { company_name: '', email: '' },
-  answers: {},     // key -> value
+  identity: { company_name: '', contact_name: '', position: '', phone: '' },
+  answers: {},
 };
 
 // ============ LOAD ============
 async function init() {
   try {
+    const saved = localStorage.getItem(LANG_KEY);
+    state.lang = saved && UI[saved] ? saved : null;
     const r = await fetch('/api/survey/questions');
     const data = await r.json();
     state.questions = data.questions || [];
@@ -51,33 +134,27 @@ async function init() {
     loadDraft();
     render();
   } catch (e) {
-    showError('Не удалось загрузить опросник. Обновите страницу.');
+    document.getElementById('stepContainer').innerHTML =
+      '<p class="subtitle">Не удалось загрузить опросник. Обновите страницу.</p>';
   }
 }
 
 function buildSteps() {
-  const steps = [
-    { type: 'intro' },
-    { type: 'identity' },
-  ];
-  // Group questions by section
-  const bySection = new Map();
+  const steps = [{ type: 'lang' }, { type: 'intro' }];
+  const byStep = new Map();
   for (const q of state.questions) {
-    const key = q.section_number + '|' + q.section_title;
-    if (!bySection.has(key)) {
-      bySection.set(key, {
-        section_number: q.section_number,
-        section_title: q.section_title,
-        section_help: q.section_help,
+    if (!byStep.has(q.step_number)) {
+      byStep.set(q.step_number, {
+        step_number: q.step_number,
+        step_title: q.step_title,
+        step_help: q.step_help,
         questions: [],
       });
     }
-    bySection.get(key).questions.push(q);
+    byStep.get(q.step_number).questions.push(q);
   }
-  const sections = [...bySection.values()].sort((a, b) => a.section_number - b.section_number);
-  for (const s of sections) {
-    steps.push({ type: 'section', ...s });
-  }
+  const stepArr = [...byStep.values()].sort((a, b) => a.step_number - b.step_number);
+  for (const s of stepArr) steps.push({ type: 'step', ...s });
   steps.push({ type: 'thanks' });
   state.steps = steps;
 }
@@ -86,10 +163,9 @@ function buildSteps() {
 function saveDraft() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      identity: state.identity,
-      answers: state.answers,
-      stepIdx: state.stepIdx,
+      identity: state.identity, answers: state.answers, stepIdx: state.stepIdx,
     }));
+    if (state.lang) localStorage.setItem(LANG_KEY, state.lang);
   } catch (e) {}
 }
 
@@ -108,128 +184,189 @@ function clearDraft() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
 }
 
+// ============ i18n helpers ============
+function t(x) {
+  if (x == null) return '';
+  if (typeof x === 'string') return x;
+  return x[state.lang] || x.ru || Object.values(x)[0] || '';
+}
+
+function optionsOf(q) {
+  const c = q.config || {};
+  const key = 'options_' + state.lang;
+  const arr = c[key] || c.options_ru || c.options || [];
+  // Also keep RU-canonical for submission alignment
+  return { localized: arr, canonical: c.options_ru || c.options || arr };
+}
+
 // ============ RENDER ============
 function render() {
   const container = document.getElementById('stepContainer');
   const nav = document.getElementById('navBar');
   const progress = document.getElementById('progressWrap');
-  const step = state.steps[state.stepIdx];
+  const step = state.steps[state.stepIdx] || state.steps[0];
+  const ui = state.lang ? UI[state.lang] : UI.ru;
 
   document.getElementById('message').textContent = '';
   document.getElementById('message').className = 'message';
 
-  // Progress visible only during section + identity steps
-  const isWorkStep = step.type === 'identity' || step.type === 'section';
+  const isWorkStep = step.type === 'step';
   progress.hidden = !isWorkStep;
   if (isWorkStep) {
-    const total = state.steps.filter((s) => s.type === 'identity' || s.type === 'section').length;
-    const idx = state.steps.slice(0, state.stepIdx + 1).filter((s) => s.type === 'identity' || s.type === 'section').length;
+    const allSteps = state.steps.filter((s) => s.type === 'step');
+    const total = allSteps.length;
+    const idx = allSteps.findIndex((s) => s === step) + 1;
     document.getElementById('progressFill').style.width = (idx / total * 100) + '%';
-    document.getElementById('progressLabel').textContent = `Шаг ${idx} из ${total}`;
+    document.getElementById('progressLabel').textContent = ui.stepOf(idx, total);
   }
 
-  nav.hidden = step.type === 'thanks';
-  document.getElementById('backBtn').style.visibility = state.stepIdx === 0 ? 'hidden' : 'visible';
-  document.getElementById('nextBtn').textContent = step.type === 'intro' ? 'Начать'
-    : isLastSection() ? 'Отправить' : 'Далее';
+  nav.hidden = step.type === 'thanks' || step.type === 'lang';
+  document.getElementById('backBtn').style.visibility =
+    (state.stepIdx === 0 || step.type === 'intro') ? 'hidden' : 'visible';
+  document.getElementById('backBtn').textContent = ui.back;
+  document.getElementById('nextBtn').textContent = isLastStep() ? ui.submit
+    : (step.type === 'intro' ? ui.start : ui.next);
 
-  if (step.type === 'intro') container.innerHTML = renderIntro();
-  else if (step.type === 'identity') container.innerHTML = renderIdentity();
-  else if (step.type === 'section') container.innerHTML = renderSection(step);
+  if (step.type === 'lang') container.innerHTML = renderLangPicker();
+  else if (step.type === 'intro') container.innerHTML = renderIntro();
+  else if (step.type === 'step') container.innerHTML = renderStep(step);
   else if (step.type === 'thanks') container.innerHTML = renderThanks();
 
   bindStepEvents(step);
   container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function isLastSection() {
+function isLastStep() {
+  const step = state.steps[state.stepIdx];
+  if (step.type !== 'step') return false;
   for (let i = state.stepIdx + 1; i < state.steps.length; i++) {
-    if (state.steps[i].type === 'section') return false;
+    if (state.steps[i].type === 'step') return false;
   }
-  return state.steps[state.stepIdx].type === 'section';
+  return true;
+}
+
+function renderLangPicker() {
+  const titles = { ru: UI.ru.selectLang, uz_cyr: UI.uz_cyr.selectLang, uz_lat: UI.uz_lat.selectLang };
+  return `
+    <h1>${titles.ru} · ${titles.uz_cyr} · ${titles.uz_lat}</h1>
+    <div class="lang-options">
+      <button type="button" class="lang-opt" data-lang="ru">
+        <div class="lang-code">RU</div>
+        <div class="lang-name">${LANG_NAMES.ru}</div>
+      </button>
+      <button type="button" class="lang-opt" data-lang="uz_cyr">
+        <div class="lang-code">UZ</div>
+        <div class="lang-name">${LANG_NAMES.uz_cyr}</div>
+      </button>
+      <button type="button" class="lang-opt" data-lang="uz_lat">
+        <div class="lang-code">UZ</div>
+        <div class="lang-name">${LANG_NAMES.uz_lat}</div>
+      </button>
+    </div>
+  `;
 }
 
 function renderIntro() {
-  return `
-    <h1>Ваше мнение о продукте и сервисе</h1>
-    <p class="subtitle">Опрос займёт ~15 минут. Ответы мы читаем лично и используем для развития продукта Verifix.</p>
-    <p class="subtitle">Название компании и email обязательны. Цитаты и публичные кейсы — только с вашего явного согласия.</p>
-  `;
-}
-
-function renderIdentity() {
+  const ui = UI[state.lang];
   const c = escapeAttr(state.identity.company_name || '');
-  const e = escapeAttr(state.identity.email || '');
+  const cn = escapeAttr(state.identity.contact_name || '');
+  const p = escapeAttr(state.identity.position || '');
+  const ph = escapeAttr(state.identity.phone || '');
   return `
-    <h2 class="section-title">Начнём с контактов</h2>
-    <p class="section-help">Нам нужно знать, от кого обратная связь — это поможет вернуться к вам с уточнениями.</p>
-
-    <div class="q-block">
-      <label class="q-title" for="f_company">Название компании <span class="req">*</span></label>
-      <input type="text" id="f_company" class="text-input" maxlength="200" value="${c}" autocomplete="organization" />
+    <div class="lang-header">
+      <span class="lang-current">${LANG_NAMES[state.lang]}</span>
+      <button type="button" class="btn-ghost lang-change" id="langChangeBtn">⇅</button>
     </div>
-
-    <div class="q-block">
-      <label class="q-title" for="f_email">Ваш рабочий email <span class="req">*</span></label>
-      <input type="email" id="f_email" class="text-input" maxlength="200" value="${e}" autocomplete="email" />
-    </div>
+    <h1>${escapeHtml(ui.surveyTitle)}</h1>
+    <p class="subtitle">${escapeHtml(ui.intro)}</p>
+    <p class="subtitle">${escapeHtml(ui.introNote)}</p>
   `;
 }
 
-function renderSection(step) {
-  const visibleQuestions = step.questions.filter((q) => isQuestionVisible(q));
-  const help = step.section_help ? `<p class="section-help">${escapeHtml(step.section_help)}</p>` : '';
+function renderStep(step) {
+  const ui = UI[state.lang];
+  const stepTitle = t(step.step_title);
+  const stepHelp = step.step_help ? t(step.step_help) : '';
+  const visible = step.questions.filter(isQuestionVisible);
+  let body = visible.map((q, i) => renderQuestion(q, step.step_number + '.' + (i + 1))).join('');
+  // Step 1 (contacts) pre-pended with identity fields
+  if (step.step_number === 1 && !visible.some((q) => q.key === 'company_name')) {
+    // Shouldn't happen with current seed — identity is handled per-question
+  }
   return `
-    <h2 class="section-title">${step.section_number}. ${escapeHtml(step.section_title)}</h2>
-    ${help}
-    ${visibleQuestions.map((q, i) => renderQuestion(q, step.section_number + '.' + (i + 1))).join('')}
+    <div class="lang-header">
+      <span class="lang-current">${LANG_NAMES[state.lang]}</span>
+      <button type="button" class="btn-ghost lang-change" id="langChangeBtn">⇅</button>
+    </div>
+    <h2 class="section-title">${step.step_number}. ${escapeHtml(stepTitle)}</h2>
+    ${stepHelp ? `<p class="section-help">${escapeHtml(stepHelp)}</p>` : ''}
+    ${body}
   `;
 }
 
 function renderQuestion(q, displayCode) {
   const val = state.answers[q.key];
   const required = q.required ? '<span class="req">*</span>' : '';
-  const helpText = q.help_text ? `<div class="q-help">${escapeHtml(q.help_text)}</div>` : '';
+  const helpText = q.help_text ? `<div class="q-help">${escapeHtml(t(q.help_text))}</div>` : '';
+  const title = escapeHtml(t(q.title));
+  const ui = UI[state.lang];
   let body = '';
 
+  // Identity fields go to state.identity, not answers
+  if (q.key === 'company_name' || q.key === 'contact_name' || q.key === 'position' || q.key === 'phone') {
+    const inputType = q.key === 'phone' ? 'tel' : 'text';
+    const v = escapeAttr(state.identity[q.key] || '');
+    body = `<input type="${inputType}" class="text-input" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" />`;
+    return `
+      <div class="q-block" data-q-key="${q.key}">
+        <div class="q-title">${displayCode}. ${title} ${required}</div>
+        ${helpText}
+        ${body}
+      </div>`;
+  }
+
   if (q.type === 'short_text') {
-    body = `<input type="text" class="text-input" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" />`;
+    body = `<input type="text" class="text-input" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" />`;
   } else if (q.type === 'long_text') {
-    body = `<textarea class="text-input" data-qkey="${q.key}" rows="3" maxlength="3000">${escapeHtml(val || '')}</textarea>`;
+    body = `<textarea class="text-input" data-qkey="${q.key}" rows="3" maxlength="3000" placeholder="${escapeAttr(ui.inputPlaceholder)}">${escapeHtml(val || '')}</textarea>`;
   } else if (q.type === 'radio') {
-    const opts = (q.config && q.config.options) || [];
-    body = '<div class="options">' + opts.map((o, i) => {
-      const checked = val === o ? 'checked' : '';
+    const { localized, canonical } = optionsOf(q);
+    body = '<div class="options">' + localized.map((label, i) => {
+      const canonicalVal = canonical[i];
+      const checked = val === canonicalVal ? 'checked' : '';
       return `
         <label class="opt">
-          <input type="radio" name="${q.key}" value="${escapeAttr(o)}" data-qkey="${q.key}" ${checked} />
-          <span>${escapeHtml(o)}</span>
+          <input type="radio" name="${q.key}" value="${escapeAttr(canonicalVal)}" data-qkey="${q.key}" ${checked} />
+          <span>${escapeHtml(label)}</span>
         </label>`;
     }).join('');
     if (q.config && q.config.allow_other) {
-      const isOther = val && !opts.includes(val);
+      const isOther = val && !canonical.includes(val);
       body += `
         <label class="opt">
           <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" ${isOther ? 'checked' : ''} />
-          <span>Другое:</span>
-          <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="свой вариант" />
+          <span>${escapeHtml(ui.otherLabel)}</span>
+          <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" />
         </label>`;
     }
     body += '</div>';
   } else if (q.type === 'checkbox') {
-    const opts = (q.config && q.config.options) || [];
+    const { localized, canonical } = optionsOf(q);
     const arr = Array.isArray(val) ? val : [];
-    body = '<div class="options">' + opts.map((o) => {
-      const checked = arr.includes(o) ? 'checked' : '';
+    body = '<div class="options">' + localized.map((label, i) => {
+      const canonicalVal = canonical[i];
+      const checked = arr.includes(canonicalVal) ? 'checked' : '';
       return `
         <label class="opt">
-          <input type="checkbox" value="${escapeAttr(o)}" data-qkey-multi="${q.key}" ${checked} />
-          <span>${escapeHtml(o)}</span>
+          <input type="checkbox" value="${escapeAttr(canonicalVal)}" data-qkey-multi="${q.key}" ${checked} />
+          <span>${escapeHtml(label)}</span>
         </label>`;
     }).join('') + '</div>';
   } else if (q.type === 'scale') {
     const c = q.config || {};
     const min = c.min ?? 1, max = c.max ?? 5;
+    const low = c.low_label ? t(c.low_label) : '';
+    const high = c.high_label ? t(c.high_label) : '';
     let items = '';
     for (let i = min; i <= max; i++) {
       const checked = String(val) === String(i) ? 'checked' : '';
@@ -243,15 +380,15 @@ function renderQuestion(q, displayCode) {
       <div class="scale">
         <div class="scale-items">${items}</div>
         <div class="scale-labels">
-          <span>${escapeHtml(c.low_label || '')}</span>
-          <span>${escapeHtml(c.high_label || '')}</span>
+          <span>${escapeHtml(low)}</span>
+          <span>${escapeHtml(high)}</span>
         </div>
       </div>`;
   }
 
   return `
     <div class="q-block" data-q-key="${q.key}">
-      <div class="q-title">${displayCode}. ${escapeHtml(q.title)} ${required}</div>
+      <div class="q-title">${displayCode}. ${title} ${required}</div>
       ${helpText}
       ${body}
     </div>
@@ -259,35 +396,74 @@ function renderQuestion(q, displayCode) {
 }
 
 function renderThanks() {
+  const ui = UI[state.lang];
   return `
-    <h1>Спасибо!</h1>
-    <p class="subtitle">Ваши ответы получены. Если вы отметили готовность к контакту — наш менеджер свяжется с вами в течение 3 рабочих дней.</p>
-    <p class="subtitle">— Команда Verifix</p>
+    <h1>${escapeHtml(ui.thanks)}</h1>
+    <p class="subtitle">${escapeHtml(ui.thanksBody)}</p>
   `;
 }
 
 // ============ VISIBILITY (branching) ============
 function isQuestionVisible(q) {
   if (!q.show_if) return true;
-  const trigger = state.answers[q.show_if.question_key];
-  const values = Array.isArray(q.show_if.values) ? q.show_if.values : [];
-  return values.includes(trigger);
+  return evalShowIf(q.show_if);
+}
+
+function evalShowIf(rule) {
+  if (!rule) return true;
+  const trigger = state.answers[rule.question_key];
+  const op = rule.op || 'in';
+  if (trigger === undefined || trigger === null || trigger === '') return false;
+  if (op === 'in') {
+    const arr = rule.values || [];
+    if (Array.isArray(trigger)) return trigger.some((x) => arr.includes(x));
+    return arr.includes(trigger);
+  }
+  if (op === 'eq') return trigger === rule.value;
+  const n = Number(trigger);
+  if (!Number.isFinite(n)) return false;
+  if (op === 'lte') return n <= Number(rule.value);
+  if (op === 'gte') return n >= Number(rule.value);
+  if (op === 'lt') return n < Number(rule.value);
+  if (op === 'gt') return n > Number(rule.value);
+  return false;
 }
 
 // ============ EVENTS ============
 function bindStepEvents(step) {
-  if (step.type === 'identity') {
-    document.getElementById('f_company').addEventListener('input', (e) => {
-      state.identity.company_name = e.target.value;
-      saveDraft();
+  // Lang picker
+  if (step.type === 'lang') {
+    document.querySelectorAll('[data-lang]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.lang = btn.dataset.lang;
+        document.documentElement.lang =
+          state.lang === 'ru' ? 'ru' : (state.lang === 'uz_cyr' ? 'uz-Cyrl' : 'uz-Latn');
+        saveDraft();
+        state.stepIdx = 1;
+        render();
+      });
     });
-    document.getElementById('f_email').addEventListener('input', (e) => {
-      state.identity.email = e.target.value;
-      saveDraft();
+    return;
+  }
+
+  // Language change button (visible on any screen except lang picker)
+  const lcb = document.getElementById('langChangeBtn');
+  if (lcb) {
+    lcb.addEventListener('click', () => {
+      state.stepIdx = 0; saveDraft(); render();
     });
   }
 
-  // Text / textarea
+  // Identity inputs
+  document.querySelectorAll('[data-identity]').forEach((el) => {
+    const k = el.dataset.identity;
+    el.addEventListener('input', () => {
+      state.identity[k] = el.value;
+      saveDraft();
+    });
+  });
+
+  // Text/radio/textarea
   document.querySelectorAll('[data-qkey]').forEach((el) => {
     const key = el.dataset.qkey;
     if (el.type === 'radio') {
@@ -297,11 +473,12 @@ function bindStepEvents(step) {
           const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
           state.answers[key] = otherInput ? otherInput.value : '';
         } else {
-          state.answers[key] = el.value;
+          // Scale values are numeric-ish strings; coerce to number when possible
+          const num = Number(el.value);
+          state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
         }
         saveDraft();
-        // Re-render only if branching target exists
-        if (dependentQuestionsExist(key)) render();
+        if (dependentExists(key)) render();
       });
     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.addEventListener('input', () => {
@@ -311,7 +488,6 @@ function bindStepEvents(step) {
     }
   });
 
-  // "Other" inline text input
   document.querySelectorAll('[data-qkey-other]').forEach((el) => {
     const key = el.dataset.qkeyOther;
     el.addEventListener('input', () => {
@@ -322,7 +498,6 @@ function bindStepEvents(step) {
     });
   });
 
-  // Checkbox groups
   document.querySelectorAll('[data-qkey-multi]').forEach((el) => {
     el.addEventListener('change', () => {
       const key = el.dataset.qkeyMulti;
@@ -336,89 +511,83 @@ function bindStepEvents(step) {
   document.getElementById('nextBtn').onclick = goNext;
 }
 
-function dependentQuestionsExist(triggerKey) {
+function dependentExists(triggerKey) {
   return state.questions.some((q) => q.show_if && q.show_if.question_key === triggerKey);
 }
 
 // ============ NAVIGATION ============
 function goBack() {
-  if (state.stepIdx === 0) return;
+  if (state.stepIdx <= 1) { state.stepIdx = 1; render(); return; }
   state.stepIdx--;
-  saveDraft();
-  render();
+  saveDraft(); render();
 }
 
 async function goNext() {
   const step = state.steps[state.stepIdx];
+  const ui = UI[state.lang];
 
   if (step.type === 'intro') {
     state.stepIdx++;
-    saveDraft();
-    render();
-    return;
+    saveDraft(); render(); return;
   }
 
-  if (step.type === 'identity') {
-    const c = state.identity.company_name.trim();
-    const e = state.identity.email.trim();
-    if (!c) return showError('Укажите название компании');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return showError('Укажите корректный email');
-    state.stepIdx++;
-    saveDraft();
-    render();
-    return;
-  }
-
-  if (step.type === 'section') {
-    // Validate required
-    const visibleQs = step.questions.filter(isQuestionVisible);
-    for (const q of visibleQs) {
+  if (step.type === 'step') {
+    const visible = step.questions.filter(isQuestionVisible);
+    for (const q of visible) {
       if (!q.required) continue;
-      const v = state.answers[q.key];
+      let v;
+      if (q.key === 'company_name' || q.key === 'contact_name' || q.key === 'position' || q.key === 'phone') {
+        v = state.identity[q.key];
+      } else {
+        v = state.answers[q.key];
+      }
       const empty = v === undefined || v === null || v === '' ||
                     (Array.isArray(v) && v.length === 0);
-      if (empty) return showError('Пожалуйста, ответьте на все обязательные вопросы (*)');
+      if (empty) return showError(ui.fillAllRequired);
+      if (q.key === 'phone' && !/^[\+\-\d\s()]{5,}$/.test(String(v))) {
+        return showError(ui.invalidPhone);
+      }
     }
 
-    if (isLastSection()) {
-      await submit();
-      return;
-    }
+    if (isLastStep()) { await submit(); return; }
     state.stepIdx++;
-    saveDraft();
-    render();
+    saveDraft(); render();
   }
 }
 
 async function submit() {
+  const ui = UI[state.lang];
   const btn = document.getElementById('nextBtn');
   btn.disabled = true;
-  btn.textContent = 'Отправляем…';
+  btn.textContent = ui.sending;
 
-  const answers = Object.keys(state.answers).map((key) => ({
-    question_key: key,
-    value: state.answers[key],
-  }));
+  const payload = {
+    company_name: state.identity.company_name,
+    contact_name: state.identity.contact_name,
+    position: state.identity.position,
+    phone: state.identity.phone,
+    language: state.lang,
+    answers: Object.keys(state.answers).map((key) => ({
+      question_key: key,
+      value: state.answers[key],
+    })),
+  };
 
   try {
     const r = await fetch('/api/survey/responses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        company_name: state.identity.company_name,
-        email: state.identity.email,
-        answers,
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Ошибка отправки');
     clearDraft();
-    state.stepIdx = state.steps.length - 1; // thanks
+    state.stepIdx = state.steps.length - 1;
     render();
   } catch (e) {
     showError(e.message);
     btn.disabled = false;
-    btn.textContent = 'Отправить';
+    btn.textContent = ui.submit;
   }
 }
 

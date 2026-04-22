@@ -41,12 +41,13 @@
       <button class="tab" data-tab="questions">Редактор вопросов</button>
     </nav>
 
-    <!-- ============ TAB: STATS ============ -->
+    <!-- ============ STATS ============ -->
     <section class="tab-panel" data-panel="stats">
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Всего ответов</div>
           <div class="stat-value" id="s_total">—</div>
+          <div id="s_lang" class="lang-breakdown muted"></div>
         </div>
         <div class="stat-card nps-card">
           <div class="stat-label">NPS</div>
@@ -60,62 +61,66 @@
           <div class="muted">шкала 1–5</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">CSAT сервис</div>
-          <div class="stat-value" id="s_csatS">—</div>
+          <div class="stat-label">Веб-интерфейс</div>
+          <div class="stat-value" id="s_webUx">—</div>
           <div class="muted">шкала 1–5</div>
         </div>
       </div>
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Интерфейс (удобство)</div>
-          <div class="stat-value" id="s_interface">—</div>
+          <div class="stat-label">Мобильное приложение</div>
+          <div class="stat-value" id="s_mobile">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Скорость поддержки</div>
-          <div class="stat-value" id="s_suppSpeed">—</div>
+          <div class="stat-label">Поддержка</div>
+          <div class="stat-value" id="s_support">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Качество поддержки</div>
-          <div class="stat-value" id="s_suppQ">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Менеджер</div>
+          <div class="stat-label">Менеджер (200+ компаний)</div>
           <div class="stat-value" id="s_mgr">—</div>
         </div>
       </div>
 
       <div class="stats-grid dist-grid">
         <div class="stat-card dist-card">
-          <div class="stat-label">Окупаемость (3.3)</div>
+          <div class="stat-label">Окупаемость (4.2)</div>
           <div id="s_dist_roi" class="dist-list"></div>
         </div>
         <div class="stat-card dist-card">
-          <div class="stat-label">Намерение продлить (7.5)</div>
+          <div class="stat-label">Намерение продлить (6.1)</div>
           <div id="s_dist_renewal" class="dist-list"></div>
         </div>
         <div class="stat-card dist-card">
-          <div class="stat-label">Альтернативы (7.1)</div>
-          <div id="s_dist_alt" class="dist-list"></div>
+          <div class="stat-label">Отрасль (2.1)</div>
+          <div id="s_dist_industry" class="dist-list"></div>
         </div>
         <div class="stat-card dist-card">
-          <div class="stat-label">Частота багов (5.4)</div>
-          <div id="s_dist_bugs" class="dist-list"></div>
+          <div class="stat-label">Размер компании (2.2)</div>
+          <div id="s_dist_size" class="dist-list"></div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Мобильное приложение (5.3)</div>
+          <div id="s_dist_mobile" class="dist-list"></div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Запрос звонка менеджера (6.6)</div>
+          <div id="s_dist_callback" class="dist-list"></div>
         </div>
       </div>
     </section>
 
-    <!-- ============ TAB: RESPONSES ============ -->
+    <!-- ============ RESPONSES ============ -->
     <section class="tab-panel" data-panel="responses" hidden>
       <div class="table-wrap">
         <div class="filters">
-          <input type="text" id="respFilter" class="text-input" placeholder="Фильтр по компании или email…" />
+          <input type="text" id="respFilter" class="text-input" placeholder="Фильтр по компании / ФИО / email…" />
         </div>
         <div id="respList" class="resp-list"></div>
       </div>
     </section>
 
-    <!-- ============ TAB: QUESTIONS EDITOR ============ -->
+    <!-- ============ QUESTIONS EDITOR ============ -->
     <section class="tab-panel" data-panel="questions" hidden>
       <div class="editor-header">
         <h2>Редактор вопросов</h2>
@@ -124,28 +129,52 @@
       <div id="qEditorList" class="q-editor-list"></div>
     </section>
 
-    <!-- Modal for adding/editing questions -->
+    <!-- Modal -->
     <div id="modal" class="modal" hidden>
       <div class="modal-card">
         <button class="modal-close" id="modalClose">×</button>
         <h3 id="modalTitle">Новый вопрос</h3>
         <form id="modalForm">
           <div class="field-row">
-            <label>Секция (номер)<input type="number" name="section_number" min="1" max="20" required /></label>
+            <label>Шаг (номер)<input type="number" name="step_number" min="1" max="20" required /></label>
             <label>Позиция<input type="number" name="position" min="1" max="99" /></label>
           </div>
-          <label>Название секции<input type="text" name="section_title" required /></label>
-          <label>Подсказка секции (необязательно)<input type="text" name="section_help" /></label>
-          <label>Ключ (уникальный латинский id, напр. company_size)<input type="text" name="key" required pattern="[a-z0-9_]+" /></label>
-          <label>Текст вопроса<textarea name="title" rows="2" required></textarea></label>
-          <label>Подсказка (необязательно)<input type="text" name="help_text" /></label>
+
+          <div class="lang-tabs">
+            <button type="button" class="lang-tab active" data-lang-tab="ru">RU</button>
+            <button type="button" class="lang-tab" data-lang-tab="uz_cyr">UZ-Cyr</button>
+            <button type="button" class="lang-tab" data-lang-tab="uz_lat">UZ-Lat</button>
+          </div>
+
+          <div class="lang-panels">
+            <div class="lang-panel" data-lang-panel="ru">
+              <label>Название шага (RU)<input type="text" name="step_title_ru" /></label>
+              <label>Подсказка шага (RU)<input type="text" name="step_help_ru" /></label>
+              <label>Текст вопроса (RU)<textarea name="title_ru" rows="2" required></textarea></label>
+              <label>Подсказка (RU)<input type="text" name="help_text_ru" /></label>
+            </div>
+            <div class="lang-panel" data-lang-panel="uz_cyr" hidden>
+              <label>Номи қадам (UZ-Cyr)<input type="text" name="step_title_uz_cyr" /></label>
+              <label>Қадам ёрдами<input type="text" name="step_help_uz_cyr" /></label>
+              <label>Савол матни<textarea name="title_uz_cyr" rows="2"></textarea></label>
+              <label>Ёрдам матни<input type="text" name="help_text_uz_cyr" /></label>
+            </div>
+            <div class="lang-panel" data-lang-panel="uz_lat" hidden>
+              <label>Nom qadam (UZ-Lat)<input type="text" name="step_title_uz_lat" /></label>
+              <label>Qadam yordami<input type="text" name="step_help_uz_lat" /></label>
+              <label>Savol matni<textarea name="title_uz_lat" rows="2"></textarea></label>
+              <label>Yordam matni<input type="text" name="help_text_uz_lat" /></label>
+            </div>
+          </div>
+
+          <label>Ключ (уникальный латинский id)<input type="text" name="key" required pattern="[a-z0-9_]+" /></label>
           <div class="field-row">
             <label>Тип
               <select name="type" required>
                 <option value="short_text">Короткий текст</option>
                 <option value="long_text">Длинный текст</option>
-                <option value="radio">Один вариант (radio)</option>
-                <option value="checkbox">Несколько вариантов (checkbox)</option>
+                <option value="radio">Один вариант</option>
+                <option value="checkbox">Несколько вариантов</option>
                 <option value="scale">Шкала</option>
               </select>
             </label>
@@ -153,8 +182,20 @@
           </div>
           <div id="typeSpecific"></div>
           <div id="showIfWrap">
-            <label>Показывать только если (ключ вопроса-триггера, необязательно)<input type="text" name="show_if_key" placeholder="напр. bug_frequency" /></label>
-            <label>Значения триггера через запятую<input type="text" name="show_if_values" placeholder="напр. Редко, Часто" /></label>
+            <label>Показывать только если (ключ вопроса-триггера)<input type="text" name="show_if_key" placeholder="напр. nps" /></label>
+            <div class="field-row">
+              <label>Оператор
+                <select name="show_if_op">
+                  <option value="in">in (одно из значений)</option>
+                  <option value="eq">равно</option>
+                  <option value="lte">≤</option>
+                  <option value="gte">≥</option>
+                  <option value="lt">&lt;</option>
+                  <option value="gt">&gt;</option>
+                </select>
+              </label>
+              <label>Значение<input type="text" name="show_if_value" placeholder='напр. 9 или "Да, регулярно, Да, иногда"' /></label>
+            </div>
           </div>
           <div class="modal-actions">
             <button type="button" class="btn-ghost" id="modalCancel">Отмена</button>
@@ -168,7 +209,14 @@
 
 <script>
 const password = { value: sessionStorage.getItem('csat_pwd') || '' };
-const state = { stats: null, responses: [], questions: [], editingId: null };
+const state = { stats: null, responses: [], questions: [], editingId: null, langEdit: 'ru' };
+const LANG_NAMES = { ru: 'Русский', uz_cyr: 'Ўзбекча (Кирилл)', uz_lat: 'Oʻzbekcha (Lotin)' };
+
+function tr(x, lang='ru') {
+  if (x == null) return '';
+  if (typeof x === 'string') return x;
+  return x[lang] || x.ru || Object.values(x)[0] || '';
+}
 
 const loginScreen = document.getElementById('loginScreen');
 const dashboard = document.getElementById('dashboard');
@@ -190,7 +238,6 @@ document.getElementById('logout').addEventListener('click', () => {
   location.reload();
 });
 
-// ========== TABS ==========
 document.querySelectorAll('.tab').forEach((btn) => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach((b) => b.classList.remove('active'));
@@ -199,7 +246,6 @@ document.querySelectorAll('.tab').forEach((btn) => {
   });
 });
 
-// ========== LOAD ==========
 async function authedFetch(url, opts = {}) {
   opts.headers = { ...(opts.headers || {}), 'x-admin-password': password.value };
   if (opts.body && !opts.headers['Content-Type']) opts.headers['Content-Type'] = 'application/json';
@@ -233,13 +279,16 @@ function renderStats() {
   document.getElementById('s_total').textContent = s.totalResponses;
   document.getElementById('s_nps').textContent = s.nps.score == null ? '—' : s.nps.score;
   document.getElementById('s_csatP').textContent = fmt(s.csatProduct);
-  document.getElementById('s_csatS').textContent = fmt(s.csatService);
-  document.getElementById('s_interface').textContent = fmt(s.scales.interface_score);
-  document.getElementById('s_suppSpeed').textContent = fmt(s.scales.support_speed);
-  document.getElementById('s_suppQ').textContent = fmt(s.scales.support_quality);
+  document.getElementById('s_webUx').textContent = fmt(s.scales.web_ux_score);
+  document.getElementById('s_mobile').textContent = fmt(s.scales.mobile_ux_score);
+  document.getElementById('s_support').textContent = fmt(s.scales.support_score);
   document.getElementById('s_mgr').textContent = fmt(s.scales.manager_score);
 
-  // NPS bar
+  // Language breakdown
+  const ld = s.languageDistribution || {};
+  const langSummary = Object.keys(ld).map((k) => `${LANG_NAMES[k] || k}: ${ld[k]}`).join(' · ');
+  document.getElementById('s_lang').textContent = langSummary;
+
   const total = s.nps.count || 1;
   const pPct = s.nps.promoters / total * 100;
   const nPct = s.nps.neutrals / total * 100;
@@ -257,8 +306,10 @@ function renderStats() {
 
   fillDist('s_dist_roi', s.distributions.roi_category);
   fillDist('s_dist_renewal', s.distributions.renewal_intent);
-  fillDist('s_dist_alt', s.distributions.alternatives);
-  fillDist('s_dist_bugs', s.distributions.bug_frequency);
+  fillDist('s_dist_industry', s.distributions.industry);
+  fillDist('s_dist_size', s.distributions.company_size);
+  fillDist('s_dist_mobile', s.distributions.mobile_usage);
+  fillDist('s_dist_callback', s.distributions.callback_request);
 }
 
 function fillDist(id, dist) {
@@ -284,7 +335,9 @@ respFilter.addEventListener('input', renderResponses);
 function renderResponses() {
   const f = (respFilter.value || '').toLowerCase().trim();
   const list = state.responses.filter((r) =>
-    !f || r.company_name.toLowerCase().includes(f) || r.email.toLowerCase().includes(f)
+    !f || r.company_name.toLowerCase().includes(f) ||
+    (r.contact_name || '').toLowerCase().includes(f) ||
+    (r.phone || '').toLowerCase().includes(f)
   );
   const el = document.getElementById('respList');
   if (!list.length) { el.innerHTML = '<div class="empty">Пока нет ответов</div>'; return; }
@@ -293,20 +346,28 @@ function renderResponses() {
 
   el.innerHTML = list.map((r) => {
     const d = new Date(r.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
+    const langBadge = LANG_NAMES[r.language] || r.language || 'ru';
     const answers = r.answers.map((a) => {
       const q = qByKey.get(a.question_key);
-      const title = q ? q.title : a.question_key;
-      const v = Array.isArray(a.value) ? a.value.join(', ') : (a.value === null || a.value === undefined ? '—' : String(a.value));
+      const title = q ? tr(q.title, 'ru') : a.question_key;
+      const v = Array.isArray(a.value)
+        ? a.value.join(', ')
+        : (a.value === null || a.value === undefined ? '—' : String(a.value));
       return `<div class="a-row"><div class="a-q">${escapeHtml(title)}</div><div class="a-v">${escapeHtml(v)}</div></div>`;
     }).join('');
     return `
       <details class="resp-item">
         <summary>
           <strong>${escapeHtml(r.company_name)}</strong>
-          <span class="muted">· ${escapeHtml(r.email)}</span>
+          ${r.contact_name ? `<span class="muted">· ${escapeHtml(r.contact_name)}</span>` : ''}
+          ${r.phone ? `<span class="muted">· ${escapeHtml(r.phone)}</span>` : ''}
+          <span class="lang-pill">${escapeHtml(langBadge)}</span>
           <span class="muted resp-date">${d}</span>
         </summary>
-        <div class="resp-body">${answers}</div>
+        <div class="resp-body">
+          ${r.position ? `<div class="a-row"><div class="a-q">Должность</div><div class="a-v">${escapeHtml(r.position)}</div></div>` : ''}
+          ${answers}
+        </div>
       </details>`;
   }).join('');
 }
@@ -316,20 +377,20 @@ function renderQuestions() {
   const el = document.getElementById('qEditorList');
   const groups = new Map();
   for (const q of state.questions) {
-    const k = q.section_number + '|' + q.section_title;
-    if (!groups.has(k)) groups.set(k, { section_number: q.section_number, section_title: q.section_title, items: [] });
+    const k = q.step_number + '|' + tr(q.step_title, 'ru');
+    if (!groups.has(k)) groups.set(k, { step_number: q.step_number, step_title: q.step_title, items: [] });
     groups.get(k).items.push(q);
   }
-  const sections = [...groups.values()].sort((a, b) => a.section_number - b.section_number);
+  const sections = [...groups.values()].sort((a, b) => a.step_number - b.step_number);
 
   el.innerHTML = sections.map((s) => `
     <div class="q-section">
-      <div class="q-section-head">${s.section_number}. ${escapeHtml(s.section_title)}</div>
+      <div class="q-section-head">${s.step_number}. ${escapeHtml(tr(s.step_title, 'ru'))}</div>
       ${s.items.map((q, i) => `
         <div class="q-row">
-          <div class="q-row-code">${s.section_number}.${i + 1}</div>
+          <div class="q-row-code">${s.step_number}.${i + 1}</div>
           <div class="q-row-body">
-            <div class="q-row-title">${escapeHtml(q.title)} ${q.required ? '<span class="req">*</span>' : ''}</div>
+            <div class="q-row-title">${escapeHtml(tr(q.title, 'ru'))} ${q.required ? '<span class="req">*</span>' : ''}</div>
             <div class="q-row-meta">
               <span class="tag">${typeLabel(q.type)}</span>
               <span class="muted">key: ${q.key}</span>
@@ -370,6 +431,16 @@ document.getElementById('modalCancel').addEventListener('click', () => closeModa
 
 document.querySelector('#modalForm [name="type"]').addEventListener('change', (e) => renderTypeSpecific(e.target.value));
 
+// Language tabs in modal
+document.querySelectorAll('.lang-tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lang-tab').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const lang = btn.dataset.langTab;
+    document.querySelectorAll('.lang-panel').forEach((p) => p.hidden = p.dataset.langPanel !== lang);
+  });
+});
+
 function openModal(q) {
   state.editingId = q ? q.id : null;
   document.getElementById('modalTitle').textContent = q ? 'Редактировать вопрос' : 'Новый вопрос';
@@ -377,18 +448,31 @@ function openModal(q) {
   f.reset();
   document.getElementById('modalErr').style.display = 'none';
 
-  f.section_number.value = q ? q.section_number : '';
-  f.section_title.value = q ? q.section_title : '';
-  f.section_help.value = q ? (q.section_help || '') : '';
+  f.step_number.value = q ? q.step_number : '';
   f.position.value = q ? q.position : '';
   f.key.value = q ? q.key : '';
-  f.title.value = q ? q.title : '';
-  f.help_text.value = q ? (q.help_text || '') : '';
   f.type.value = q ? q.type : 'short_text';
   f.required.checked = q ? !!q.required : false;
+
+  ['ru', 'uz_cyr', 'uz_lat'].forEach((lang) => {
+    const stt = q && q.step_title ? tr(q.step_title, lang) : '';
+    const sth = q && q.step_help ? tr(q.step_help, lang) : '';
+    const tt = q && q.title ? tr(q.title, lang) : '';
+    const hh = q && q.help_text ? tr(q.help_text, lang) : '';
+    f[`step_title_${lang}`].value = stt;
+    f[`step_help_${lang}`].value = sth;
+    f[`title_${lang}`].value = tt;
+    f[`help_text_${lang}`].value = hh;
+  });
+
   if (q && q.show_if) {
     f.show_if_key.value = q.show_if.question_key || '';
-    f.show_if_values.value = Array.isArray(q.show_if.values) ? q.show_if.values.join(', ') : '';
+    f.show_if_op.value = q.show_if.op || 'in';
+    if (q.show_if.op === 'in' || !q.show_if.op) {
+      f.show_if_value.value = (q.show_if.values || []).join(', ');
+    } else {
+      f.show_if_value.value = q.show_if.value ?? '';
+    }
   }
   renderTypeSpecific(f.type.value, q && q.config);
   modal.hidden = false;
@@ -400,19 +484,31 @@ function renderTypeSpecific(type, existingConfig) {
   const cfg = existingConfig || {};
   if (type === 'radio' || type === 'checkbox') {
     typeSpecific.innerHTML = `
-      <label>Варианты (каждый с новой строки)
-        <textarea name="options" rows="5">${(cfg.options || []).map(escapeHtml).join('\n')}</textarea>
+      <label>Варианты RU (построчно)
+        <textarea name="options_ru" rows="5">${(cfg.options_ru || cfg.options || []).map(escapeHtml).join('\n')}</textarea>
+      </label>
+      <label>Варианты UZ-Cyr (построчно, по порядку как в RU)
+        <textarea name="options_uz_cyr" rows="5">${(cfg.options_uz_cyr || []).map(escapeHtml).join('\n')}</textarea>
+      </label>
+      <label>Варианты UZ-Lat (построчно, по порядку как в RU)
+        <textarea name="options_uz_lat" rows="5">${(cfg.options_uz_lat || []).map(escapeHtml).join('\n')}</textarea>
       </label>
       ${type === 'radio' ? `<label class="inline-check"><input type="checkbox" name="allow_other" ${cfg.allow_other ? 'checked' : ''} /> Разрешить «Другое»</label>` : ''}
     `;
   } else if (type === 'scale') {
+    const ll = cfg.low_label || {};
+    const hl = cfg.high_label || {};
     typeSpecific.innerHTML = `
       <div class="field-row">
         <label>Мин<input type="number" name="min" value="${cfg.min ?? 1}" /></label>
         <label>Макс<input type="number" name="max" value="${cfg.max ?? 5}" /></label>
       </div>
-      <label>Подпись слева<input type="text" name="low_label" value="${escapeAttr(cfg.low_label || '')}" /></label>
-      <label>Подпись справа<input type="text" name="high_label" value="${escapeAttr(cfg.high_label || '')}" /></label>
+      <label>Подпись слева (RU)<input type="text" name="low_label_ru" value="${escapeAttr(ll.ru || '')}" /></label>
+      <label>Подпись слева (UZ-Cyr)<input type="text" name="low_label_uz_cyr" value="${escapeAttr(ll.uz_cyr || '')}" /></label>
+      <label>Подпись слева (UZ-Lat)<input type="text" name="low_label_uz_lat" value="${escapeAttr(ll.uz_lat || '')}" /></label>
+      <label>Подпись справа (RU)<input type="text" name="high_label_ru" value="${escapeAttr(hl.ru || '')}" /></label>
+      <label>Подпись справа (UZ-Cyr)<input type="text" name="high_label_uz_cyr" value="${escapeAttr(hl.uz_cyr || '')}" /></label>
+      <label>Подпись справа (UZ-Lat)<input type="text" name="high_label_uz_lat" value="${escapeAttr(hl.uz_lat || '')}" /></label>
     `;
   } else {
     typeSpecific.innerHTML = '';
@@ -424,31 +520,63 @@ document.getElementById('modalForm').addEventListener('submit', async (e) => {
   const f = e.target;
   const fd = new FormData(f);
   const type = fd.get('type');
+  const mk = (name) => ({
+    ru: (fd.get(name + '_ru') || '').toString().trim(),
+    uz_cyr: (fd.get(name + '_uz_cyr') || '').toString().trim(),
+    uz_lat: (fd.get(name + '_uz_lat') || '').toString().trim(),
+  });
+  const clean = (obj) => {
+    const out = {};
+    for (const k of Object.keys(obj)) if (obj[k]) out[k] = obj[k];
+    return Object.keys(out).length ? out : null;
+  };
+
+  const title = mk('title');
+  const help_text = clean(mk('help_text'));
+  const step_title = mk('step_title');
+  const step_help = clean(mk('step_help'));
+
   let config = null;
   if (type === 'radio' || type === 'checkbox') {
-    const opts = (fd.get('options') || '').toString().split('\n').map((x) => x.trim()).filter(Boolean);
-    config = { options: opts };
+    const optsRu = (fd.get('options_ru') || '').toString().split('\n').map(s => s.trim()).filter(Boolean);
+    const optsCyr = (fd.get('options_uz_cyr') || '').toString().split('\n').map(s => s.trim()).filter(Boolean);
+    const optsLat = (fd.get('options_uz_lat') || '').toString().split('\n').map(s => s.trim()).filter(Boolean);
+    config = { options_ru: optsRu };
+    if (optsCyr.length) config.options_uz_cyr = optsCyr;
+    if (optsLat.length) config.options_uz_lat = optsLat;
     if (type === 'radio' && fd.get('allow_other')) config.allow_other = true;
   } else if (type === 'scale') {
     config = {
       min: parseInt(fd.get('min'), 10),
       max: parseInt(fd.get('max'), 10),
-      low_label: fd.get('low_label') || '',
-      high_label: fd.get('high_label') || '',
+      low_label: mk('low_label'),
+      high_label: mk('high_label'),
     };
   }
+
   const show_if_key = (fd.get('show_if_key') || '').toString().trim();
-  const show_if_values = (fd.get('show_if_values') || '').toString().split(',').map((x) => x.trim()).filter(Boolean);
-  const show_if = show_if_key && show_if_values.length ? { question_key: show_if_key, values: show_if_values } : null;
+  const show_if_op = (fd.get('show_if_op') || 'in').toString();
+  const show_if_raw = (fd.get('show_if_value') || '').toString().trim();
+  let show_if = null;
+  if (show_if_key && show_if_raw) {
+    if (show_if_op === 'in') {
+      const values = show_if_raw.split(',').map(s => s.trim()).filter(Boolean);
+      show_if = { question_key: show_if_key, op: 'in', values };
+    } else if (show_if_op === 'eq') {
+      show_if = { question_key: show_if_key, op: 'eq', value: show_if_raw };
+    } else {
+      show_if = { question_key: show_if_key, op: show_if_op, value: Number(show_if_raw) };
+    }
+  }
 
   const body = {
     key: fd.get('key'),
-    section_number: parseInt(fd.get('section_number'), 10),
-    section_title: fd.get('section_title'),
-    section_help: fd.get('section_help') || null,
+    step_number: parseInt(fd.get('step_number'), 10),
+    step_title,
+    step_help,
     position: fd.get('position') ? parseInt(fd.get('position'), 10) : null,
-    title: fd.get('title'),
-    help_text: fd.get('help_text') || null,
+    title,
+    help_text,
     type,
     required: !!fd.get('required'),
     config,
@@ -469,7 +597,6 @@ document.getElementById('modalForm').addEventListener('submit', async (e) => {
   await loadAll();
 });
 
-// ========== EXPORT ==========
 document.getElementById('exportBtn').addEventListener('click', async (e) => {
   e.preventDefault();
   const r = await authedFetch('/api/admin/survey/export.csv');
@@ -481,7 +608,6 @@ document.getElementById('exportBtn').addEventListener('click', async (e) => {
   URL.revokeObjectURL(url);
 });
 
-// ========== HELPERS ==========
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -489,7 +615,6 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) { return escapeHtml(s); }
 
-// ========== AUTO-LOGIN ==========
 (async () => {
   if (password.value) {
     if (await loadAll()) {
