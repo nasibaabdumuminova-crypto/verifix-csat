@@ -42,10 +42,61 @@
     "step_title": { "ru": "Контакты", "uz_cyr": "Алоқа маълумотлари", "uz_lat": "Aloqa maʼlumotlari" },
     "position": 3,
     "title": { "ru": "Ваша должность", "uz_cyr": "Лавозимингиз", "uz_lat": "Lavozimingiz" },
-    "help_text": { "ru": "Например: Head of HR", "uz_cyr": "Масалан: HR бўлими бошлиғи", "uz_lat": "Masalan: HR boʻlimi boshligʻi" },
-    "type": "short_text",
+    "help_text": {
+      "ru": "Выберите из списка. Если Вашей должности нет — выберите «Другое» и укажите свой вариант.",
+      "uz_cyr": "Рўйхатдан танланг. Агар лавозимингиз бўлмаса — «Бошқа» ни танлаб, ўз вариантингизни кўрсатинг.",
+      "uz_lat": "Roʻyxatdan tanlang. Agar lavozimingiz boʻlmasa — «Boshqa» ni tanlab, oʻz variantingizni koʻrsating."
+    },
+    "type": "select",
     "required": true,
-    "config": null,
+    "config": {
+      "options_ru": [
+        "Владелец / Founder",
+        "CEO / Генеральный директор",
+        "COO / Операционный директор",
+        "CFO / Финансовый директор",
+        "CHRO / HR-директор (Head of People)",
+        "HR Business Partner",
+        "HR-менеджер",
+        "HR-специалист",
+        "Рекрутер",
+        "Руководитель отдела (не HR)",
+        "Бухгалтер / Главный бухгалтер",
+        "IT-администратор",
+        "Специалист"
+      ],
+      "options_uz_cyr": [
+        "Эгаси / Founder",
+        "CEO / Бош директор",
+        "COO / Операцион директор",
+        "CFO / Молия директори",
+        "CHRO / HR директори (Head of People)",
+        "HR Business Partner",
+        "HR-менежер",
+        "HR-мутахассиси",
+        "Рекрутер",
+        "Бўлим раҳбари (HR эмас)",
+        "Бухгалтер / Бош бухгалтер",
+        "IT-администратор",
+        "Мутахассис"
+      ],
+      "options_uz_lat": [
+        "Egasi / Founder",
+        "CEO / Bosh direktor",
+        "COO / Operatsion direktor",
+        "CFO / Moliya direktori",
+        "CHRO / HR direktori (Head of People)",
+        "HR Business Partner",
+        "HR-menejer",
+        "HR-mutaxassisi",
+        "Rekruter",
+        "Boʻlim rahbari (HR emas)",
+        "Buxgalter / Bosh buxgalter",
+        "IT-administrator",
+        "Mutaxassis"
+      ],
+      "allow_other": true
+    },
     "show_if": null
   },
   {
@@ -71,12 +122,12 @@
     "step_title": { "ru": "О компании", "uz_cyr": "Компания ҳақида", "uz_lat": "Kompaniya haqida" },
     "position": 1,
     "title": { "ru": "Сфера деятельности", "uz_cyr": "Фаолият соҳаси", "uz_lat": "Faoliyat sohasi" },
-    "type": "radio",
+    "type": "select",
     "required": true,
     "config": {
-      "options_ru": ["Розничная торговля (Retail)","Производство","Логистика и транспорт","Строительство и недвижимость","Финансы и страхование","HoReCa (гостиницы, рестораны, кафе)","IT и технологии","Телеком и связь","Агросектор","Образование","Здравоохранение","Государственный сектор","Другое"],
-      "options_uz_cyr": ["Чакана савдо (Retail)","Ишлаб чиқариш","Логистика ва транспорт","Қурилиш ва кўчмас мулк","Молия ва суғурта","HoReCa (меҳмонхона, ресторан, кафе)","IT ва технологиялар","Телеком ва алоқа","Агросектор","Таълим","Соғлиқни сақлаш","Давлат сектори","Бошқа"],
-      "options_uz_lat": ["Chakana savdo (Retail)","Ishlab chiqarish","Logistika va transport","Qurilish va koʻchmas mulk","Moliya va sugʻurta","HoReCa (mehmonxona, restoran, kafe)","IT va texnologiyalar","Telekom va aloqa","Agrosektor","Taʼlim","Sogʻliqni saqlash","Davlat sektori","Boshqa"],
+      "options_ru": ["Розничная торговля (Retail)","Производство","Логистика и транспорт","Строительство и недвижимость","Финансы и страхование","HoReCa (гостиницы, рестораны, кафе)","IT и технологии","Телеком и связь","Агросектор","Образование","Здравоохранение","Государственный сектор"],
+      "options_uz_cyr": ["Чакана савдо (Retail)","Ишлаб чиқариш","Логистика ва транспорт","Қурилиш ва кўчмас мулк","Молия ва суғурта","HoReCa (меҳмонхона, ресторан, кафе)","IT ва технологиялар","Телеком ва алоқа","Агросектор","Таълим","Соғлиқни сақлаш","Давлат сектори"],
+      "options_uz_lat": ["Chakana savdo (Retail)","Ishlab chiqarish","Logistika va transport","Qurilish va koʻchmas mulk","Moliya va sugʻurta","HoReCa (mehmonxona, restoran, kafe)","IT va texnologiyalar","Telekom va aloqa","Agrosektor","Taʼlim","Sogʻliqni saqlash","Davlat sektori"],
       "allow_other": true
     },
     "show_if": null

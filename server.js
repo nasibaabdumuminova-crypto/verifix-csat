@@ -88,13 +88,18 @@ async function initDb() {
       position INT NOT NULL,
       title JSONB NOT NULL,
       help_text JSONB,
-      type TEXT NOT NULL CHECK (type IN ('short_text','long_text','radio','checkbox','scale')),
+      type TEXT NOT NULL CHECK (type IN ('short_text','long_text','radio','checkbox','scale','select')),
       required BOOLEAN NOT NULL DEFAULT FALSE,
       config JSONB,
       show_if JSONB,
       deleted_at TIMESTAMPTZ
     );
   `);
+  // Ensure 'select' is allowed on existing installs (one-time migration)
+  try {
+    await pool.query(`ALTER TABLE survey_questions DROP CONSTRAINT IF EXISTS survey_questions_type_check`);
+    await pool.query(`ALTER TABLE survey_questions ADD CONSTRAINT survey_questions_type_check CHECK (type IN ('short_text','long_text','radio','checkbox','scale','select'))`);
+  } catch (_) { /* ignore */ }
   await pool.query(`
     CREATE TABLE IF NOT EXISTS survey_responses (
       id SERIAL PRIMARY KEY,

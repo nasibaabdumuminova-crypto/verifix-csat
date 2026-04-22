@@ -200,7 +200,8 @@ function optionsOf(q) {
 }
 
 // ============ RENDER ============
-function render() {
+// opts.scrollTo — whether to scroll to top (true on step change, false on in-step re-render)
+function render(opts = {}) {
   const container = document.getElementById('stepContainer');
   const nav = document.getElementById('navBar');
   const progress = document.getElementById('progressWrap');
@@ -224,7 +225,9 @@ function render() {
   document.getElementById('backBtn').style.visibility =
     (state.stepIdx === 0 || step.type === 'intro') ? 'hidden' : 'visible';
   document.getElementById('backBtn').textContent = ui.back;
-  document.getElementById('nextBtn').textContent = isLastStep() ? ui.submit
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.disabled = false;
+  nextBtn.textContent = isLastStep() ? ui.submit
     : (step.type === 'intro' ? ui.start : ui.next);
 
   if (step.type === 'lang') container.innerHTML = renderLangPicker();
@@ -233,7 +236,9 @@ function render() {
   else if (step.type === 'thanks') container.innerHTML = renderThanks();
 
   bindStepEvents(step);
-  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (opts.scrollTo !== false) {
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function isLastStep() {
@@ -313,7 +318,34 @@ function renderQuestion(q, displayCode) {
   let body = '';
 
   // Identity fields go to state.identity, not answers
-  if (q.key === 'company_name' || q.key === 'contact_name' || q.key === 'position' || q.key === 'phone') {
+  const IS_IDENTITY = q.key === 'company_name' || q.key === 'contact_name' || q.key === 'position' || q.key === 'phone';
+  if (IS_IDENTITY && q.type === 'select') {
+    const { localized, canonical } = optionsOf(q);
+    const allowOther = q.config && q.config.allow_other;
+    const cur = state.identity[q.key] || '';
+    const isOther = cur && !canonical.includes(cur);
+    const selectedCanonical = isOther ? '__other__' : cur;
+    let options = `<option value="">${escapeHtml('— ' + ui.inputPlaceholder.replace('…',''))}</option>`;
+    localized.forEach((label, i) => {
+      const cv = canonical[i];
+      const sel = cv === selectedCanonical ? 'selected' : '';
+      options += `<option value="${escapeAttr(cv)}" ${sel}>${escapeHtml(label)}</option>`;
+    });
+    if (allowOther) {
+      options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}</option>`;
+    }
+    body = `<select class="text-input select-input" data-identity-select="${q.key}">${options}</select>`;
+    if (allowOther) {
+      body += `<input type="text" class="text-input inline-other-under" data-identity-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? cur : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
+    }
+    return `
+      <div class="q-block" data-q-key="${q.key}">
+        <div class="q-title">${displayCode}. ${title} ${required}</div>
+        ${helpText}
+        ${body}
+      </div>`;
+  }
+  if (IS_IDENTITY) {
     const inputType = q.key === 'phone' ? 'tel' : 'text';
     const v = escapeAttr(state.identity[q.key] || '');
     body = `<input type="${inputType}" class="text-input" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" />`;
@@ -329,6 +361,24 @@ function renderQuestion(q, displayCode) {
     body = `<input type="text" class="text-input" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" />`;
   } else if (q.type === 'long_text') {
     body = `<textarea class="text-input" data-qkey="${q.key}" rows="3" maxlength="3000" placeholder="${escapeAttr(ui.inputPlaceholder)}">${escapeHtml(val || '')}</textarea>`;
+  } else if (q.type === 'select') {
+    const { localized, canonical } = optionsOf(q);
+    const allowOther = q.config && q.config.allow_other;
+    const isOther = val && !canonical.includes(val) && val !== '';
+    const selectedCanonical = isOther ? '__other__' : (val || '');
+    let options = `<option value="">${escapeHtml('— ' + ui.inputPlaceholder.replace('…',''))}</option>`;
+    localized.forEach((label, i) => {
+      const cv = canonical[i];
+      const sel = cv === selectedCanonical ? 'selected' : '';
+      options += `<option value="${escapeAttr(cv)}" ${sel}>${escapeHtml(label)}</option>`;
+    });
+    if (allowOther) {
+      options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}</option>`;
+    }
+    body = `<select class="text-input select-input" data-qkey="${q.key}">${options}</select>`;
+    if (allowOther) {
+      body += `<input type="text" class="text-input inline-other-under" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
+    }
   } else if (q.type === 'radio') {
     const { localized, canonical } = optionsOf(q);
     body = '<div class="options">' + localized.map((label, i) => {
@@ -463,7 +513,32 @@ function bindStepEvents(step) {
     });
   });
 
-  // Text/radio/textarea
+  // Identity select (position may be a dropdown)
+  document.querySelectorAll('[data-identity-select]').forEach((el) => {
+    const k = el.dataset.identitySelect;
+    el.addEventListener('change', () => {
+      const other = document.querySelector(`[data-identity-other="${k}"]`);
+      if (el.value === '__other__') {
+        if (other) other.hidden = false;
+        state.identity[k] = other ? other.value : '';
+      } else {
+        if (other) { other.hidden = true; other.value = ''; }
+        state.identity[k] = el.value;
+      }
+      saveDraft();
+    });
+  });
+  document.querySelectorAll('[data-identity-other]').forEach((el) => {
+    const k = el.dataset.identityOther;
+    el.addEventListener('input', () => {
+      const sel = document.querySelector(`[data-identity-select="${k}"]`);
+      if (sel) sel.value = '__other__';
+      state.identity[k] = el.value;
+      saveDraft();
+    });
+  });
+
+  // Text/radio/textarea/select
   document.querySelectorAll('[data-qkey]').forEach((el) => {
     const key = el.dataset.qkey;
     if (el.type === 'radio') {
@@ -473,12 +548,24 @@ function bindStepEvents(step) {
           const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
           state.answers[key] = otherInput ? otherInput.value : '';
         } else {
-          // Scale values are numeric-ish strings; coerce to number when possible
           const num = Number(el.value);
           state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
         }
         saveDraft();
-        if (dependentExists(key)) render();
+        if (dependentExists(key)) render({ scrollTo: false });
+      });
+    } else if (el.tagName === 'SELECT') {
+      el.addEventListener('change', () => {
+        const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
+        if (el.value === '__other__') {
+          if (otherInput) otherInput.hidden = false;
+          state.answers[key] = otherInput ? otherInput.value : '';
+        } else {
+          if (otherInput) { otherInput.hidden = true; otherInput.value = ''; }
+          state.answers[key] = el.value;
+        }
+        saveDraft();
+        if (dependentExists(key)) render({ scrollTo: false });
       });
     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.addEventListener('input', () => {
@@ -491,8 +578,12 @@ function bindStepEvents(step) {
   document.querySelectorAll('[data-qkey-other]').forEach((el) => {
     const key = el.dataset.qkeyOther;
     el.addEventListener('input', () => {
+      // Radio case
       const radio = document.querySelector(`input[name="${key}"][value="__other__"]`);
       if (radio) radio.checked = true;
+      // Select case — ensure the select stays on __other__
+      const sel = document.querySelector(`select[data-qkey="${key}"]`);
+      if (sel) sel.value = '__other__';
       state.answers[key] = el.value;
       saveDraft();
     });
