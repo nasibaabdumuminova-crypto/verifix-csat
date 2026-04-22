@@ -173,7 +173,8 @@
               <select name="type" required>
                 <option value="short_text">Короткий текст</option>
                 <option value="long_text">Длинный текст</option>
-                <option value="radio">Один вариант</option>
+                <option value="radio">Один вариант (radio)</option>
+                <option value="select">Выпадающий список (dropdown)</option>
                 <option value="checkbox">Несколько вариантов</option>
                 <option value="scale">Шкала</option>
               </select>
@@ -413,7 +414,7 @@ function renderQuestions() {
 }
 
 function typeLabel(t) {
-  return { short_text: 'Текст', long_text: 'Длинный текст', radio: 'Один из', checkbox: 'Несколько', scale: 'Шкала' }[t] || t;
+  return { short_text: 'Текст', long_text: 'Длинный текст', radio: 'Один из', select: 'Dropdown', checkbox: 'Несколько', scale: 'Шкала' }[t] || t;
 }
 
 async function deleteQuestion(id) {
@@ -482,7 +483,7 @@ function closeModal() { modal.hidden = true; state.editingId = null; }
 
 function renderTypeSpecific(type, existingConfig) {
   const cfg = existingConfig || {};
-  if (type === 'radio' || type === 'checkbox') {
+  if (type === 'radio' || type === 'checkbox' || type === 'select') {
     typeSpecific.innerHTML = `
       <label>Варианты RU (построчно)
         <textarea name="options_ru" rows="5">${(cfg.options_ru || cfg.options || []).map(escapeHtml).join('\n')}</textarea>
@@ -493,7 +494,7 @@ function renderTypeSpecific(type, existingConfig) {
       <label>Варианты UZ-Lat (построчно, по порядку как в RU)
         <textarea name="options_uz_lat" rows="5">${(cfg.options_uz_lat || []).map(escapeHtml).join('\n')}</textarea>
       </label>
-      ${type === 'radio' ? `<label class="inline-check"><input type="checkbox" name="allow_other" ${cfg.allow_other ? 'checked' : ''} /> Разрешить «Другое»</label>` : ''}
+      ${type !== 'checkbox' ? `<label class="inline-check"><input type="checkbox" name="allow_other" ${cfg.allow_other ? 'checked' : ''} /> Разрешить «Другое»</label>` : ''}
     `;
   } else if (type === 'scale') {
     const ll = cfg.low_label || {};
@@ -537,14 +538,14 @@ document.getElementById('modalForm').addEventListener('submit', async (e) => {
   const step_help = clean(mk('step_help'));
 
   let config = null;
-  if (type === 'radio' || type === 'checkbox') {
+  if (type === 'radio' || type === 'checkbox' || type === 'select') {
     const optsRu = (fd.get('options_ru') || '').toString().split('\n').map(s => s.trim()).filter(Boolean);
     const optsCyr = (fd.get('options_uz_cyr') || '').toString().split('\n').map(s => s.trim()).filter(Boolean);
     const optsLat = (fd.get('options_uz_lat') || '').toString().split('\n').map(s => s.trim()).filter(Boolean);
     config = { options_ru: optsRu };
     if (optsCyr.length) config.options_uz_cyr = optsCyr;
     if (optsLat.length) config.options_uz_lat = optsLat;
-    if (type === 'radio' && fd.get('allow_other')) config.allow_other = true;
+    if (type !== 'checkbox' && fd.get('allow_other')) config.allow_other = true;
   } else if (type === 'scale') {
     config = {
       min: parseInt(fd.get('min'), 10),
