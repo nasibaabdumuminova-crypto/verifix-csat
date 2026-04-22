@@ -1,299 +1,607 @@
 [
   {
-    "key": "role", "section_number": 1, "section_title": "О компании",
-    "section_help": "Контекст вашего бизнеса помогает нам правильно интерпретировать ответы.",
-    "position": 1, "title": "Ваша роль в компании", "help_text": null,
-    "type": "radio", "required": true,
+    "key": "company_name",
+    "step_number": 1,
+    "step_title": {
+      "ru": "Контакты",
+      "uz_cyr": "Алоқа маълумотлари",
+      "uz_lat": "Aloqa maʼlumotlari"
+    },
+    "step_help": {
+      "ru": "Чтобы мы могли вернуться к Вам с уточнениями.",
+      "uz_cyr": "Сизга аниқлаштириш учун қайта мурожаат қила олишимиз учун.",
+      "uz_lat": "Sizga aniqlashtirish uchun qayta murojaat qila olishimiz uchun."
+    },
+    "position": 1,
+    "title": {
+      "ru": "Название компании",
+      "uz_cyr": "Компания номи",
+      "uz_lat": "Kompaniya nomi"
+    },
+    "help_text": null,
+    "type": "short_text",
+    "required": true,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "contact_name",
+    "step_number": 1,
+    "step_title": { "ru": "Контакты", "uz_cyr": "Алоқа маълумотлари", "uz_lat": "Aloqa maʼlumotlari" },
+    "position": 2,
+    "title": { "ru": "ФИО", "uz_cyr": "Ф.И.Ш.", "uz_lat": "F.I.SH." },
+    "help_text": { "ru": "Фамилия Имя Отчество", "uz_cyr": "Фамилия Исм Ота исми", "uz_lat": "Familiya Ism Ota ismi" },
+    "type": "short_text",
+    "required": true,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "position",
+    "step_number": 1,
+    "step_title": { "ru": "Контакты", "uz_cyr": "Алоқа маълумотлари", "uz_lat": "Aloqa maʼlumotlari" },
+    "position": 3,
+    "title": { "ru": "Ваша должность", "uz_cyr": "Лавозимингиз", "uz_lat": "Lavozimingiz" },
+    "help_text": { "ru": "Например: Head of HR", "uz_cyr": "Масалан: HR бўлими бошлиғи", "uz_lat": "Masalan: HR boʻlimi boshligʻi" },
+    "type": "short_text",
+    "required": true,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "phone",
+    "step_number": 1,
+    "step_title": { "ru": "Контакты", "uz_cyr": "Алоқа маълумотлари", "uz_lat": "Aloqa maʼlumotlari" },
+    "position": 4,
+    "title": { "ru": "Телефон", "uz_cyr": "Телефон рақами", "uz_lat": "Telefon raqami" },
+    "help_text": {
+      "ru": "Чтобы менеджер мог связаться для уточнений или обсуждения Ваших ответов.",
+      "uz_cyr": "Менежер жавобларингизни аниқлаштириш ёки муҳокама қилиш учун боғланиши учун.",
+      "uz_lat": "Menejer javoblaringizni aniqlashtirish yoki muhokama qilish uchun bogʻlanishi uchun."
+    },
+    "type": "short_text",
+    "required": true,
+    "config": { "validate": "phone" },
+    "show_if": null
+  },
+
+  {
+    "key": "industry",
+    "step_number": 2,
+    "step_title": { "ru": "О компании", "uz_cyr": "Компания ҳақида", "uz_lat": "Kompaniya haqida" },
+    "position": 1,
+    "title": { "ru": "Сфера деятельности", "uz_cyr": "Фаолият соҳаси", "uz_lat": "Faoliyat sohasi" },
+    "type": "radio",
+    "required": true,
     "config": {
-      "options": ["Владелец / CEO", "Операционный директор (COO)", "Финансовый директор (CFO)",
-                  "HR-руководитель (директор / Head of People)", "HR-специалист / HR-менеджер",
-                  "Руководитель отдела (не HR)", "Другое"],
+      "options_ru": ["Розничная торговля (Retail)","Производство","Логистика и транспорт","Строительство и недвижимость","Финансы и страхование","HoReCa (гостиницы, рестораны, кафе)","IT и технологии","Телеком и связь","Агросектор","Образование","Здравоохранение","Государственный сектор","Другое"],
+      "options_uz_cyr": ["Чакана савдо (Retail)","Ишлаб чиқариш","Логистика ва транспорт","Қурилиш ва кўчмас мулк","Молия ва суғурта","HoReCa (меҳмонхона, ресторан, кафе)","IT ва технологиялар","Телеком ва алоқа","Агросектор","Таълим","Соғлиқни сақлаш","Давлат сектори","Бошқа"],
+      "options_uz_lat": ["Chakana savdo (Retail)","Ishlab chiqarish","Logistika va transport","Qurilish va koʻchmas mulk","Moliya va sugʻurta","HoReCa (mehmonxona, restoran, kafe)","IT va texnologiyalar","Telekom va aloqa","Agrosektor","Taʼlim","Sogʻliqni saqlash","Davlat sektori","Boshqa"],
       "allow_other": true
     },
     "show_if": null
   },
   {
-    "key": "company_size", "section_number": 1, "section_title": "О компании",
-    "section_help": "Контекст вашего бизнеса помогает нам правильно интерпретировать ответы.",
-    "position": 2, "title": "Сколько сотрудников в вашей компании?", "help_text": null,
-    "type": "radio", "required": true,
-    "config": { "options": ["До 50", "50–200", "200–500", "500–1000", "1000–5000", "Более 5000"] },
-    "show_if": null
-  },
-  {
-    "key": "tenure", "section_number": 1, "section_title": "О компании",
-    "section_help": "Контекст вашего бизнеса помогает нам правильно интерпретировать ответы.",
-    "position": 3, "title": "Как долго вы работаете с Verifix?", "help_text": null,
-    "type": "radio", "required": true,
+    "key": "company_size",
+    "step_number": 2,
+    "step_title": { "ru": "О компании", "uz_cyr": "Компания ҳақида", "uz_lat": "Kompaniya haqida" },
+    "position": 2,
+    "title": { "ru": "Размер компании", "uz_cyr": "Компания ҳажми", "uz_lat": "Kompaniya hajmi" },
+    "type": "radio",
+    "required": true,
     "config": {
-      "options": ["Ещё на этапе внедрения / пилота", "Менее 3 месяцев", "3–6 месяцев",
-                  "6–12 месяцев", "1–2 года", "Более 2 лет"]
+      "options_ru": ["До 50","51–200","201–500","501–1000","1001–5000","Более 5000"],
+      "options_uz_cyr": ["50 тагача","51–200","201–500","501–1000","1001–5000","5000 дан кўп"],
+      "options_uz_lat": ["50 tagacha","51–200","201–500","501–1000","1001–5000","5000 dan koʻp"]
     },
     "show_if": null
   },
   {
-    "key": "modules_used", "section_number": 2, "section_title": "Использование продукта",
-    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
-    "position": 1, "title": "Какие модули вы используете регулярно (каждый день или каждую неделю)?",
-    "help_text": null, "type": "checkbox", "required": true,
+    "key": "decision_role",
+    "step_number": 2,
+    "step_title": { "ru": "О компании", "uz_cyr": "Компания ҳақида", "uz_lat": "Kompaniya haqida" },
+    "position": 3,
+    "title": {
+      "ru": "Ваша роль в решениях по Verifix (можно выбрать несколько)",
+      "uz_cyr": "Verifix бўйича қарорларни қабул қилишдаги ролингиз (бир нечтасини танлашингиз мумкин)",
+      "uz_lat": "Verifix boʻyicha qarorlarni qabul qilishdagi rolingiz (bir nechtasini tanlashingiz mumkin)"
+    },
+    "type": "checkbox",
+    "required": true,
     "config": {
-      "options": ["Учёт рабочего времени", "Табели", "Расчёт зарплаты", "КЭДО", "ATS (подбор)",
-                  "Performance (KPI)", "AI Assistant", "Управление сменами",
-                  "Мобильное приложение", "Аналитика и отчёты"]
+      "options_ru": ["Принимаю финальное решение о внедрении и продлении","Влияю на решение, но не принимаю напрямую","Отвечаю за настройку и администрирование системы","Использую Verifix в ежедневной работе","Другое"],
+      "options_uz_cyr": ["Жорий этиш ва муддатни узайтириш бўйича якуний қарор қабул қиламан","Қарорга таъсир қиламан, лекин бевосита қабул қилмайман","Тизимни созлаш ва бошқариш учун жавобгарман","Verifix-дан ҳар куни фойдаланаман","Бошқа"],
+      "options_uz_lat": ["Joriy etish va muddatni uzaytirish boʻyicha yakuniy qaror qabul qilaman","Qarorga taʼsir qilaman, lekin bevosita qabul qilmayman","Tizimni sozlash va boshqarish uchun javobgarman","Verifix-dan har kuni foydalanaman","Boshqa"]
     },
     "show_if": null
   },
   {
-    "key": "most_useful_module", "section_number": 2, "section_title": "Использование продукта",
-    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
-    "position": 2, "title": "Какой модуль приносит вам больше всего пользы? Почему?",
-    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
-  },
-  {
-    "key": "unused_modules", "section_number": 2, "section_title": "Использование продукта",
-    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
-    "position": 3, "title": "Есть ли модули, которые вы не используете? Почему?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "usage_frequency", "section_number": 2, "section_title": "Использование продукта",
-    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
-    "position": 4, "title": "Как часто вы заходите в Verifix (веб или приложение)?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Каждый день", "Несколько раз в неделю", "Раз в неделю", "Реже раза в неделю"] },
-    "show_if": null
-  },
-  {
-    "key": "active_users_percent", "section_number": 2, "section_title": "Использование продукта",
-    "section_help": "Хотим увидеть реальную картину: какими модулями вы пользуетесь и как часто.",
-    "position": 5, "title": "Сколько сотрудников компании активно пользуются приложением Verifix?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Менее 10%", "10–30%", "30–60%", "60–90%", "90% и более"] },
-    "show_if": null
-  },
-  {
-    "key": "main_task", "section_number": 3, "section_title": "Ценность и ROI",
-    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
-    "position": 1, "title": "Какую главную задачу решает для вас Verifix сегодня?",
-    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
-  },
-  {
-    "key": "metrics_improved", "section_number": 3, "section_title": "Ценность и ROI",
-    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
-    "position": 2, "title": "Какие метрики улучшились после внедрения? (цифры или % если есть)",
-    "help_text": "Например: «время на расчёт ЗП −50%», «точность учёта 100%», «текучка −20%»",
-    "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "roi_category", "section_number": 3, "section_title": "Ценность и ROI",
-    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
-    "position": 3, "title": "Окупается ли для вас подписка Verifix?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Нет, не окупается", "Сложно сказать / не считали", "Да, окупается", "Да, окупается многократно"] },
-    "show_if": null
-  },
-  {
-    "key": "painful_to_lose", "section_number": 3, "section_title": "Ценность и ROI",
-    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
-    "position": 4, "title": "Если бы нужно было убрать один модуль — какой было бы больнее всего потерять?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "less_valuable", "section_number": 3, "section_title": "Ценность и ROI",
-    "section_help": "Помогите понять, что изменилось в вашем бизнесе благодаря Verifix.",
-    "position": 5, "title": "Какой модуль оказался менее ценным, чем вы ожидали?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "nps", "section_number": 4, "section_title": "Удовлетворённость",
-    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
-    "position": 1, "title": "Насколько вероятно, что вы порекомендуете Verifix коллеге из другой компании?",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 0, "max": 10, "low_label": "Точно не порекомендую", "high_label": "Точно порекомендую" },
-    "show_if": null
-  },
-  {
-    "key": "nps_reason", "section_number": 4, "section_title": "Удовлетворённость",
-    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
-    "position": 2, "title": "Почему вы поставили такую оценку?",
-    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
-  },
-  {
-    "key": "csat_product", "section_number": 4, "section_title": "Удовлетворённость",
-    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
-    "position": 3, "title": "CSAT продукт — насколько вы в целом довольны продуктом Verifix?",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 1, "max": 5, "low_label": "Крайне недоволен", "high_label": "Полностью доволен" },
-    "show_if": null
-  },
-  {
-    "key": "csat_service", "section_number": 4, "section_title": "Удовлетворённость",
-    "section_help": "Классические метрики. Отвечайте честно — от этого зависят наши приоритеты.",
-    "position": 4, "title": "CSAT сервис — насколько вы в целом довольны работой команды Verifix (менеджер, поддержка)?",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 1, "max": 5, "low_label": "Крайне недоволен", "high_label": "Полностью доволен" },
-    "show_if": null
-  },
-  {
-    "key": "missing_features", "section_number": 5, "section_title": "Боли и пожелания",
-    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
-    "position": 1, "title": "Каких функций не хватает в Verifix?",
-    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
-  },
-  {
-    "key": "workarounds", "section_number": 5, "section_title": "Боли и пожелания",
-    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
-    "position": 2, "title": "Есть ли задачи, которые вы решаете в обход Verifix (Excel, мессенджеры, другой софт)? Какие?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "improvements", "section_number": 5, "section_title": "Боли и пожелания",
-    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
-    "position": 3, "title": "Что бы вы улучшили в первую очередь? (в том числе — что сейчас работает неудобно или раздражает)",
-    "help_text": null, "type": "long_text", "required": true, "config": null, "show_if": null
-  },
-  {
-    "key": "bug_frequency", "section_number": 5, "section_title": "Боли и пожелания",
-    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
-    "position": 4, "title": "Сталкивались ли вы с багами или сбоями за последние 3 месяца?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Нет", "Редко", "Часто"] },
-    "show_if": null
-  },
-  {
-    "key": "bug_description", "section_number": 5, "section_title": "Боли и пожелания",
-    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
-    "position": 5, "title": "Опишите, с какими именно багами или сбоями сталкивались",
-    "help_text": null, "type": "long_text", "required": false, "config": null,
-    "show_if": { "question_key": "bug_frequency", "values": ["Редко", "Часто"] }
-  },
-  {
-    "key": "interface_score", "section_number": 5, "section_title": "Боли и пожелания",
-    "section_help": "Самый важный блок для нас. Что работает плохо? Чего не хватает?",
-    "position": 6, "title": "Интерфейс Verifix — удобный или запутанный?",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 1, "max": 5, "low_label": "Очень запутанный", "high_label": "Интуитивно понятный" },
-    "show_if": null
-  },
-  {
-    "key": "support_speed", "section_number": 6, "section_title": "Сервис и поддержка",
-    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
-    "position": 1, "title": "Скорость ответов поддержки Verifix",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 1, "max": 5, "low_label": "Очень медленно", "high_label": "Моментально" },
-    "show_if": null
-  },
-  {
-    "key": "support_quality", "section_number": 6, "section_title": "Сервис и поддержка",
-    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
-    "position": 2, "title": "Качество решения запросов поддержкой",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 1, "max": 5, "low_label": "Не решают", "high_label": "Решают всё с первого раза" },
-    "show_if": null
-  },
-  {
-    "key": "manager_score", "section_number": 6, "section_title": "Сервис и поддержка",
-    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
-    "position": 3, "title": "Как вы оцениваете работу вашего персонального менеджера?",
-    "help_text": null, "type": "scale", "required": true,
-    "config": { "min": 1, "max": 5, "low_label": "Плохо", "high_label": "Отлично" },
-    "show_if": null
-  },
-  {
-    "key": "comm_frequency", "section_number": 6, "section_title": "Сервис и поддержка",
-    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
-    "position": 4, "title": "Достаточна ли частота коммуникаций от Verifix?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Слишком редко", "Нормально", "Слишком часто"] },
-    "show_if": null
-  },
-  {
-    "key": "service_improvements", "section_number": 6, "section_title": "Сервис и поддержка",
-    "section_help": "Как работает команда Verifix вокруг продукта: менеджеры, поддержка, внедрение.",
-    "position": 5, "title": "Что бы вы улучшили в сервисе Verifix?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "alternatives", "section_number": 7, "section_title": "Будущее сотрудничества",
-    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
-    "position": 1, "title": "Рассматриваете ли вы альтернативы Verifix?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Нет", "Иногда смотрим", "Активно ищем замену"] },
-    "show_if": null
-  },
-  {
-    "key": "churn_reason", "section_number": 7, "section_title": "Будущее сотрудничества",
-    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
-    "position": 2, "title": "Если бы завтра пришлось отказаться от Verifix — какая была бы главная причина?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "retention_reason", "section_number": 7, "section_title": "Будущее сотрудничества",
-    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
-    "position": 3, "title": "Что удерживает вас в Verifix?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
-  },
-  {
-    "key": "switching_difficulty", "section_number": 7, "section_title": "Будущее сотрудничества",
-    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
-    "position": 4, "title": "Насколько сложно вам было бы перейти на другое решение?",
-    "help_text": null, "type": "radio", "required": true,
+    "key": "tenure",
+    "step_number": 2,
+    "step_title": { "ru": "О компании", "uz_cyr": "Компания ҳақида", "uz_lat": "Kompaniya haqida" },
+    "position": 4,
+    "title": {
+      "ru": "Как долго Вы работаете с Verifix",
+      "uz_cyr": "Verifix билан қанчадан бери ишлайсиз",
+      "uz_lat": "Verifix bilan qanchadan beri ishlaysiz"
+    },
+    "type": "radio",
+    "required": true,
     "config": {
-      "options": ["Легко — до 2 недель", "Умеренно — 1–2 месяца", "Сложно — 3–6 месяцев",
-                  "Очень сложно — более полугода", "Никогда не оценивали / трудно сказать"]
+      "options_ru": ["Ещё на этапе внедрения / пилота","Менее 3 месяцев","3–6 месяцев","6–12 месяцев","1–2 года","Более 2 лет"],
+      "options_uz_cyr": ["Ҳозирча жорий этиш / пилот босқичида","3 ойдан кам","3–6 ой","6–12 ой","1–2 йил","2 йилдан кўп"],
+      "options_uz_lat": ["Hozircha joriy etish / pilot bosqichida","3 oydan kam","3–6 oy","6–12 oy","1–2 yil","2 yildan koʻp"]
+    },
+    "show_if": null
+  },
+
+  {
+    "key": "modules_used",
+    "step_number": 3,
+    "step_title": { "ru": "Использование продукта", "uz_cyr": "Маҳсулотдан фойдаланиш", "uz_lat": "Mahsulotdan foydalanish" },
+    "position": 1,
+    "title": {
+      "ru": "Какие модули Вы используете регулярно (можно выбрать несколько)",
+      "uz_cyr": "Қайси модуллардан мунтазам фойдаланасиз (бир нечтасини танлашингиз мумкин)",
+      "uz_lat": "Qaysi modullardan muntazam foydalanasiz (bir nechtasini tanlashingiz mumkin)"
+    },
+    "type": "checkbox",
+    "required": true,
+    "config": {
+      "options_ru": ["Учёт рабочего времени","Табели","Расчёт зарплаты","Verifix Recruit (ATS, массовый подбор)","Verifix Perform (KPI)","Verifix Talent Management","Управление сменами","Мобильное приложение","Аналитика и отчёты"],
+      "options_uz_cyr": ["Иш вақтини ҳисобга олиш","Табеллар","Иш ҳақини ҳисоблаш","Verifix Recruit (ATS, оммавий танлов)","Verifix Perform (KPI)","Verifix Talent Management","Сменалар бошқаруви","Мобил илова","Аналитика ва ҳисоботлар"],
+      "options_uz_lat": ["Ish vaqtini hisobga olish","Tabellar","Ish haqini hisoblash","Verifix Recruit (ATS, ommaviy tanlov)","Verifix Perform (KPI)","Verifix Talent Management","Smenalar boshqaruvi","Mobil ilova","Analitika va hisobotlar"]
     },
     "show_if": null
   },
   {
-    "key": "renewal_intent", "section_number": 7, "section_title": "Будущее сотрудничества",
-    "section_help": "Честные ответы помогут нам удержать вас и исправить то, что не работает.",
-    "position": 5, "title": "Планируете ли вы продлевать контракт в следующем периоде?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Точно да", "Скорее да", "Ещё не решили", "Скорее нет", "Точно нет"] },
-    "show_if": null
-  },
-  {
-    "key": "additional_modules", "section_number": 8, "section_title": "Расширение и референсы",
-    "section_help": "Что мы можем сделать вместе в будущем?",
-    "position": 1, "title": "Интересуют ли вас доп. модули, которые вы сейчас не используете?",
-    "help_text": null, "type": "checkbox", "required": false,
+    "key": "most_useful_module",
+    "step_number": 3,
+    "step_title": { "ru": "Использование продукта", "uz_cyr": "Маҳсулотдан фойдаланиш", "uz_lat": "Mahsulotdan foydalanish" },
+    "position": 2,
+    "title": {
+      "ru": "Какой модуль приносит Вам больше всего пользы?",
+      "uz_cyr": "Қайси модул сизга энг кўп фойда келтиради?",
+      "uz_lat": "Qaysi modul sizga eng koʻp foyda keltiradi?"
+    },
+    "type": "radio",
+    "required": true,
     "config": {
-      "options": ["Verifix Perform (KPI, OKR, 360°)", "Verifix Recruit (ATS, массовый подбор)",
-                  "AI Assistant", "Forecasting (прогноз нагрузки)", "Нет, всё необходимое у меня уже есть"]
+      "options_ru": ["Учёт рабочего времени","Табели","Расчёт зарплаты","Verifix Recruit (ATS, массовый подбор)","Verifix Perform (KPI)","Verifix Talent Management","Управление сменами","Мобильное приложение","Аналитика и отчёты"],
+      "options_uz_cyr": ["Иш вақтини ҳисобга олиш","Табеллар","Иш ҳақини ҳисоблаш","Verifix Recruit (ATS, оммавий танлов)","Verifix Perform (KPI)","Verifix Talent Management","Сменалар бошқаруви","Мобил илова","Аналитика ва ҳисоботлар"],
+      "options_uz_lat": ["Ish vaqtini hisobga olish","Tabellar","Ish haqini hisoblash","Verifix Recruit (ATS, ommaviy tanlov)","Verifix Perform (KPI)","Verifix Talent Management","Smenalar boshqaruvi","Mobil ilova","Analitika va hisobotlar"]
     },
     "show_if": null
   },
   {
-    "key": "headcount_plans", "section_number": 8, "section_title": "Расширение и референсы",
-    "section_help": "Что мы можем сделать вместе в будущем?",
-    "position": 2, "title": "Планируете ли вы расширять команду в ближайшие 6 месяцев?",
-    "help_text": null, "type": "radio", "required": true,
+    "key": "most_useful_reason",
+    "step_number": 3,
+    "step_title": { "ru": "Использование продукта", "uz_cyr": "Маҳсулотдан фойдаланиш", "uz_lat": "Mahsulotdan foydalanish" },
+    "position": 3,
+    "title": {
+      "ru": "Коротко: почему именно этот модуль самый ценный?",
+      "uz_cyr": "Қисқача: нима учун айнан шу модул энг қимматли?",
+      "uz_lat": "Qisqacha: nima uchun aynan shu modul eng qimmatli?"
+    },
+    "type": "long_text",
+    "required": false,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "interested_modules",
+    "step_number": 3,
+    "step_title": { "ru": "Использование продукта", "uz_cyr": "Маҳсулотдан фойдаланиш", "uz_lat": "Mahsulotdan foydalanish" },
+    "position": 4,
+    "title": {
+      "ru": "Какие модули Вы пока не используете, но хотели бы попробовать?",
+      "uz_cyr": "Қайси модулларни ҳали ишлатмаяпсиз, лекин синаб кўришни истайсизми?",
+      "uz_lat": "Qaysi modullarni hali ishlatmayapsiz, lekin sinab koʻrishni istaysizmi?"
+    },
+    "help_text": {
+      "ru": "Отметьте, если нужна помощь с запуском — менеджер свяжется с Вами.",
+      "uz_cyr": "Ишга тушириш учун ёрдам керак бўлса, белгиланг — менежер сиз билан боғланади.",
+      "uz_lat": "Ishga tushirish uchun yordam kerak boʻlsa, belgilang — menejer siz bilan bogʻlanadi."
+    },
+    "type": "checkbox",
+    "required": false,
     "config": {
-      "options": ["Да, значительно (+20% и больше)", "Умеренно (до +20%)",
-                  "Нет, штат останется прежним", "Планируем сокращения"]
+      "options_ru": ["КЭДО","AI Assistant","Verifix Perform (KPI)","Verifix Recruit (ATS, массовый подбор)","Verifix Talent Management","Мобильное приложение","Всё необходимое уже используем"],
+      "options_uz_cyr": ["КЭҲА (КЭДО)","AI Assistant","Verifix Perform (KPI)","Verifix Recruit (ATS, оммавий танлов)","Verifix Talent Management","Мобил илова","Керакли ҳамма нарсадан фойдаланмоқдамиз"],
+      "options_uz_lat": ["KEHA (KEDO)","AI Assistant","Verifix Perform (KPI)","Verifix Recruit (ATS, ommaviy tanlov)","Verifix Talent Management","Mobil ilova","Kerakli hamma narsadan foydalanmoqdamiz"]
+    },
+    "show_if": null
+  },
+
+  {
+    "key": "main_task",
+    "step_number": 4,
+    "step_title": { "ru": "Ценность и удовлетворённость", "uz_cyr": "Қиймат ва қониқиш", "uz_lat": "Qiymat va qoniqish" },
+    "position": 1,
+    "title": {
+      "ru": "Какую главную задачу решает для Вас Verifix сегодня?",
+      "uz_cyr": "Бугунги кунда Verifix сиз учун қайси асосий вазифани ҳал қилади?",
+      "uz_lat": "Bugungi kunda Verifix siz uchun qaysi asosiy vazifani hal qiladi?"
+    },
+    "help_text": { "ru": "1–2 предложения", "uz_cyr": "1–2 та гап", "uz_lat": "1–2 ta gap" },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "roi_category",
+    "step_number": 4,
+    "step_title": { "ru": "Ценность и удовлетворённость", "uz_cyr": "Қиймат ва қониқиш", "uz_lat": "Qiymat va qoniqish" },
+    "position": 2,
+    "title": {
+      "ru": "Окупается ли для Вас подписка Verifix?",
+      "uz_cyr": "Verifix обунаси сиз учун оқланадими?",
+      "uz_lat": "Verifix obunasi siz uchun oqlanadimi?"
+    },
+    "type": "radio",
+    "required": true,
+    "config": {
+      "options_ru": ["Да, окупается многократно","Да, окупается","Сложно сказать / не считали","Нет, пока не окупается"],
+      "options_uz_cyr": ["Ҳа, кўп марта оқланади","Ҳа, оқланади","Айтиш қийин / ҳисобламаганмиз","Йўқ, ҳали оқланмаяпти"],
+      "options_uz_lat": ["Ha, koʻp marta oqlanadi","Ha, oqlanadi","Aytish qiyin / hisoblamaganmiz","Yoʻq, hali oqlanmayapti"]
     },
     "show_if": null
   },
   {
-    "key": "reference_willingness", "section_number": 8, "section_title": "Расширение и референсы",
-    "section_help": "Что мы можем сделать вместе в будущем?",
-    "position": 3, "title": "Готовы ли вы выступить публичным референсом (кейс, отзыв, цитата на сайте)?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Да", "Возможно при определённых условиях", "Нет"] },
+    "key": "nps",
+    "step_number": 4,
+    "step_title": { "ru": "Ценность и удовлетворённость", "uz_cyr": "Қиймат ва қониқиш", "uz_lat": "Qiymat va qoniqish" },
+    "position": 3,
+    "title": {
+      "ru": "Насколько вероятно, что Вы порекомендуете Verifix коллеге из другой компании?",
+      "uz_cyr": "Бошқа компаниядаги ҳамкасбингизга Verifix-ни тавсия қилиш эҳтимоли қанчалик?",
+      "uz_lat": "Boshqa kompaniyadagi hamkasbingizga Verifix-ni tavsiya qilish ehtimoli qanchalik?"
+    },
+    "type": "scale",
+    "required": true,
+    "config": {
+      "min": 0, "max": 10,
+      "low_label": { "ru": "Точно не порекомендую", "uz_cyr": "Аниқ тавсия қилмайман", "uz_lat": "Aniq tavsiya qilmayman" },
+      "high_label": { "ru": "Точно порекомендую", "uz_cyr": "Албатта тавсия қиламан", "uz_lat": "Albatta tavsiya qilaman" }
+    },
     "show_if": null
   },
   {
-    "key": "video_willingness", "section_number": 8, "section_title": "Расширение и референсы",
-    "section_help": "Что мы можем сделать вместе в будущем?",
-    "position": 4, "title": "Готовы ли вы рассказать о Verifix на мероприятии или в видеоотзыве?",
-    "help_text": null, "type": "radio", "required": true,
-    "config": { "options": ["Да", "Возможно", "Нет"] },
+    "key": "nps_like",
+    "step_number": 4,
+    "step_title": { "ru": "Ценность и удовлетворённость", "uz_cyr": "Қиймат ва қониқиш", "uz_lat": "Qiymat va qoniqish" },
+    "position": 4,
+    "title": {
+      "ru": "Что именно Вам нравится больше всего в Verifix?",
+      "uz_cyr": "Verifix-да сизга айнан нима энг кўп ёқади?",
+      "uz_lat": "Verifix-da sizga aynan nima eng koʻp yoqadi?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": { "question_key": "nps", "op": "gte", "value": 9 }
+  },
+  {
+    "key": "nps_improve",
+    "step_number": 4,
+    "step_title": { "ru": "Ценность и удовлетворённость", "uz_cyr": "Қиймат ва қониқиш", "uz_lat": "Qiymat va qoniqish" },
+    "position": 5,
+    "title": {
+      "ru": "Что должно измениться, чтобы Ваша оценка выросла до 9–10?",
+      "uz_cyr": "Сизнинг баҳоингиз 9–10 гача ўсиши учун нима ўзгариши керак?",
+      "uz_lat": "Sizning bahoingiz 9–10 gacha oʻsishi uchun nima oʻzgarishi kerak?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": { "question_key": "nps", "op": "lte", "value": 8 }
+  },
+  {
+    "key": "csat_product",
+    "step_number": 4,
+    "step_title": { "ru": "Ценность и удовлетворённость", "uz_cyr": "Қиймат ва қониқиш", "uz_lat": "Qiymat va qoniqish" },
+    "position": 6,
+    "title": {
+      "ru": "Насколько Вы довольны продуктом Verifix в целом?",
+      "uz_cyr": "Verifix маҳсулотидан умуман қанчалик мамнунсиз?",
+      "uz_lat": "Verifix mahsulotidan umuman qanchalik mamnunsiz?"
+    },
+    "type": "scale",
+    "required": true,
+    "config": {
+      "min": 1, "max": 5,
+      "low_label": { "ru": "Очень недоволен", "uz_cyr": "Жуда норози", "uz_lat": "Juda norozi" },
+      "high_label": { "ru": "Полностью доволен", "uz_cyr": "Тўлиқ мамнун", "uz_lat": "Toʻliq mamnun" }
+    },
+    "show_if": null
+  },
+
+  {
+    "key": "web_ux_score",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 1,
+    "title": {
+      "ru": "Насколько удобен интерфейс Verifix (веб-версия)?",
+      "uz_cyr": "Verifix интерфейси (веб-версия) қанчалик қулай?",
+      "uz_lat": "Verifix interfeysi (veb-versiya) qanchalik qulay?"
+    },
+    "type": "scale",
+    "required": true,
+    "config": {
+      "min": 1, "max": 5,
+      "low_label": { "ru": "Очень неудобно", "uz_cyr": "Жуда ноқулай", "uz_lat": "Juda noqulay" },
+      "high_label": { "ru": "Очень удобно", "uz_cyr": "Жуда қулай", "uz_lat": "Juda qulay" }
+    },
     "show_if": null
   },
   {
-    "key": "final_comment", "section_number": 8, "section_title": "Расширение и референсы",
-    "section_help": "Что мы можем сделать вместе в будущем?",
-    "position": 5, "title": "Хотите что-то добавить или передать команде Verifix?",
-    "help_text": null, "type": "long_text", "required": false, "config": null, "show_if": null
+    "key": "web_ux_issues",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 2,
+    "title": {
+      "ru": "Что именно неудобно в веб-версии? Что хотелось бы улучшить?",
+      "uz_cyr": "Веб-версияда нима айнан ноқулай? Нимани яхшилашни истардингиз?",
+      "uz_lat": "Veb-versiyada nima aynan noqulay? Nimani yaxshilashni istardingiz?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": { "question_key": "web_ux_score", "op": "lte", "value": 3 }
+  },
+  {
+    "key": "mobile_usage",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 3,
+    "title": {
+      "ru": "Используете ли Вы мобильное приложение Verifix?",
+      "uz_cyr": "Verifix мобил иловасидан фойдаланасизми?",
+      "uz_lat": "Verifix mobil ilovasidan foydalanasizmi?"
+    },
+    "type": "radio",
+    "required": true,
+    "config": {
+      "options_ru": ["Да, регулярно","Да, иногда","Нет, но хотел(а) бы попробовать","Нет, не знал(а), что оно есть","Нет, в этом нет необходимости"],
+      "options_uz_cyr": ["Ҳа, мунтазам","Ҳа, баъзан","Йўқ, лекин синаб кўришни истардим","Йўқ, унинг борлигини билмаганман","Йўқ, бунга эҳтиёж йўқ"],
+      "options_uz_lat": ["Ha, muntazam","Ha, baʼzan","Yoʻq, lekin sinab koʻrishni istardim","Yoʻq, uning borligini bilmaganman","Yoʻq, bunga ehtiyoj yoʻq"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "mobile_ux_score",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 4,
+    "title": {
+      "ru": "Насколько удобно мобильное приложение?",
+      "uz_cyr": "Мобил илова қанчалик қулай?",
+      "uz_lat": "Mobil ilova qanchalik qulay?"
+    },
+    "type": "scale",
+    "required": true,
+    "config": {
+      "min": 1, "max": 5,
+      "low_label": { "ru": "Очень неудобно", "uz_cyr": "Жуда ноқулай", "uz_lat": "Juda noqulay" },
+      "high_label": { "ru": "Очень удобно", "uz_cyr": "Жуда қулай", "uz_lat": "Juda qulay" }
+    },
+    "show_if": { "question_key": "mobile_usage", "op": "in", "values": ["Да, регулярно","Да, иногда"] }
+  },
+  {
+    "key": "mobile_ux_issues",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 5,
+    "title": {
+      "ru": "Что именно неудобно в мобильном приложении? Что хотелось бы улучшить?",
+      "uz_cyr": "Мобил иловада нима айнан ноқулай? Нимани яхшилашни истардингиз?",
+      "uz_lat": "Mobil ilovada nima aynan noqulay? Nimani yaxshilashni istardingiz?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": { "question_key": "mobile_ux_score", "op": "lte", "value": 3 }
+  },
+  {
+    "key": "missing_features",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 6,
+    "title": {
+      "ru": "Каких 1–3 функций Вам больше всего не хватает в Verifix?",
+      "uz_cyr": "Verifix-да сизга 1–3 та қандай функция энг кўп етишмаяпти?",
+      "uz_lat": "Verifix-da sizga 1–3 ta qanday funksiya eng koʻp yetishmayapti?"
+    },
+    "help_text": {
+      "ru": "Можно перечислить через запятую.",
+      "uz_cyr": "Вергул билан ажратиб санашингиз мумкин.",
+      "uz_lat": "Vergul bilan ajratib sanashingiz mumkin."
+    },
+    "type": "long_text",
+    "required": false,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "support_score",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 7,
+    "title": {
+      "ru": "Как Вы оцениваете работу технической поддержки Verifix?",
+      "uz_cyr": "Verifix техник қўллаб-қувватлаш хизматини қандай баҳолайсиз?",
+      "uz_lat": "Verifix texnik qoʻllab-quvvatlash xizmatini qanday baholaysiz?"
+    },
+    "type": "scale",
+    "required": true,
+    "config": {
+      "min": 1, "max": 5,
+      "low_label": { "ru": "Плохо", "uz_cyr": "Ёмон", "uz_lat": "Yomon" },
+      "high_label": { "ru": "Отлично", "uz_cyr": "Аъло", "uz_lat": "Aʼlo" }
+    },
+    "show_if": null
+  },
+  {
+    "key": "support_improve",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 8,
+    "title": {
+      "ru": "Что можно улучшить в работе технической поддержки?",
+      "uz_cyr": "Техник қўллаб-қувватлаш ишида нимани яхшилаш мумкин?",
+      "uz_lat": "Texnik qoʻllab-quvvatlash ishida nimani yaxshilash mumkin?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": { "question_key": "support_score", "op": "lte", "value": 3 }
+  },
+  {
+    "key": "manager_score",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 9,
+    "title": {
+      "ru": "Как Вы оцениваете работу Вашего персонального менеджера?",
+      "uz_cyr": "Шахсий менежерингиз ишини қандай баҳолайсиз?",
+      "uz_lat": "Shaxsiy menejeringiz ishini qanday baholaysiz?"
+    },
+    "type": "scale",
+    "required": true,
+    "config": {
+      "min": 1, "max": 5,
+      "low_label": { "ru": "Плохо", "uz_cyr": "Ёмон", "uz_lat": "Yomon" },
+      "high_label": { "ru": "Отлично", "uz_cyr": "Аъло", "uz_lat": "Aʼlo" }
+    },
+    "show_if": { "question_key": "company_size", "op": "in", "values": ["201–500","501–1000","1001–5000","Более 5000"] }
+  },
+  {
+    "key": "manager_improve",
+    "step_number": 5,
+    "step_title": { "ru": "Продукт и сервис", "uz_cyr": "Маҳсулот ва хизмат", "uz_lat": "Mahsulot va xizmat" },
+    "position": 10,
+    "title": {
+      "ru": "Что можно улучшить в работе менеджера?",
+      "uz_cyr": "Менежер ишида нимани яхшилаш мумкин?",
+      "uz_lat": "Menejer ishida nimani yaxshilash mumkin?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": { "question_key": "manager_score", "op": "lte", "value": 3 }
+  },
+
+  {
+    "key": "renewal_intent",
+    "step_number": 6,
+    "step_title": { "ru": "Будущее сотрудничества", "uz_cyr": "Ҳамкорлик келажаги", "uz_lat": "Hamkorlik kelajagi" },
+    "position": 1,
+    "title": {
+      "ru": "Планируете ли Вы продлевать контракт в следующем периоде?",
+      "uz_cyr": "Келгуси даврда шартномани узайтиришни режалаштиряпсизми?",
+      "uz_lat": "Kelgusi davrda shartnomani uzaytirishni rejalashtiryapsizmi?"
+    },
+    "type": "radio",
+    "required": true,
+    "config": {
+      "options_ru": ["Точно да","Скорее да","Ещё не решили","Скорее нет","Точно нет"],
+      "options_uz_cyr": ["Албатта ҳа","Кўпроқ ҳа","Ҳали ҳал қилмадик","Кўпроқ йўқ","Албатта йўқ"],
+      "options_uz_lat": ["Albatta ha","Koʻproq ha","Hali hal qilmadik","Koʻproq yoʻq","Albatta yoʻq"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "retention_reason",
+    "step_number": 6,
+    "step_title": { "ru": "Будущее сотрудничества", "uz_cyr": "Ҳамкорлик келажаги", "uz_lat": "Hamkorlik kelajagi" },
+    "position": 2,
+    "title": {
+      "ru": "Что для Вас критически важно, чтобы мы сохранили и развивали в Verifix?",
+      "uz_cyr": "Verifix-да нимани сақлаб қолиш ва ривожлантириш сиз учун жуда муҳим?",
+      "uz_lat": "Verifix-da nimani saqlab qolish va rivojlantirish siz uchun juda muhim?"
+    },
+    "help_text": {
+      "ru": "Что именно Вас удерживает в продукте?",
+      "uz_cyr": "Маҳсулотда сизни айнан нима ушлаб турибди?",
+      "uz_lat": "Mahsulotda sizni aynan nima ushlab turibdi?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "headcount_plans",
+    "step_number": 6,
+    "step_title": { "ru": "Будущее сотрудничества", "uz_cyr": "Ҳамкорлик келажаги", "uz_lat": "Hamkorlik kelajagi" },
+    "position": 3,
+    "title": {
+      "ru": "Планируете ли Вы расширять команду в ближайшие 6 месяцев?",
+      "uz_cyr": "Яқин 6 ой ичида жамоани кенгайтиришни режалаштиряпсизми?",
+      "uz_lat": "Yaqin 6 oy ichida jamoani kengaytirishni rejalashtiryapsizmi?"
+    },
+    "type": "radio",
+    "required": true,
+    "config": {
+      "options_ru": ["Да, значительно (+20% или больше)","Умеренно (до ~10%)","Штат остаётся прежним","Планируем сокращение"],
+      "options_uz_cyr": ["Ҳа, сезиларли (+20% ёки кўпроқ)","Ўртача (~10% гача)","Штат ўзгармайди","Қисқартиришни режалаштирмоқдамиз"],
+      "options_uz_lat": ["Ha, sezilarli (+20% yoki koʻproq)","Oʻrtacha (~10% gacha)","Shtat oʻzgarmaydi","Qisqartirishni rejalashtirmoqdamiz"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "reference_willingness",
+    "step_number": 6,
+    "step_title": { "ru": "Будущее сотрудничества", "uz_cyr": "Ҳамкорлик келажаги", "uz_lat": "Hamkorlik kelajagi" },
+    "position": 4,
+    "title": {
+      "ru": "Готовы ли Вы поделиться публичным отзывом о Verifix?",
+      "uz_cyr": "Verifix ҳақида оммавий фикр билдиришга тайёрмисиз?",
+      "uz_lat": "Verifix haqida ommaviy fikr bildirishga tayyormisiz?"
+    },
+    "type": "radio",
+    "required": false,
+    "config": {
+      "options_ru": ["Да — можно публиковать на сайте / в соцсетях","Готов(а) поучаствовать в кейсе или видеоотзыве","Возможно, при определённых условиях","Пока не готов(а)"],
+      "options_uz_cyr": ["Ҳа — веб-сайт / ижтимоий тармоқларда чоп этиш мумкин","Кейс ёки видеосуҳбатда иштирок этишга тайёрман","Маълум шартлар асосида — балки","Ҳали тайёр эмасман"],
+      "options_uz_lat": ["Ha — veb-sayt / ijtimoiy tarmoqlarda chop etish mumkin","Keys yoki videosuhbatda ishtirok etishga tayyorman","Maʼlum shartlar asosida — balki","Hali tayyor emasman"]
+    },
+    "show_if": null
+  },
+  {
+    "key": "final_comment",
+    "step_number": 6,
+    "step_title": { "ru": "Будущее сотрудничества", "uz_cyr": "Ҳамкорлик келажаги", "uz_lat": "Hamkorlik kelajagi" },
+    "position": 5,
+    "title": {
+      "ru": "Хотите что-то добавить или передать команде Verifix?",
+      "uz_cyr": "Verifix жамоасига бирор нарса қўшимча қилиш ёки етказиш истайсизми?",
+      "uz_lat": "Verifix jamoasiga biror narsa qoʻshimcha qilish yoki yetkazish istaysizmi?"
+    },
+    "type": "long_text",
+    "required": false,
+    "config": null,
+    "show_if": null
+  },
+  {
+    "key": "callback_request",
+    "step_number": 6,
+    "step_title": { "ru": "Будущее сотрудничества", "uz_cyr": "Ҳамкорлик келажаги", "uz_lat": "Hamkorlik kelajagi" },
+    "position": 6,
+    "title": {
+      "ru": "Хотите ли Вы, чтобы Ваш менеджер связался с Вами для обсуждения ответов?",
+      "uz_cyr": "Менежер жавобларингизни муҳокама қилиш учун сиз билан боғланишини истайсизми?",
+      "uz_lat": "Menejer javoblaringizni muhokama qilish uchun siz bilan bogʻlanishini istaysizmi?"
+    },
+    "type": "radio",
+    "required": true,
+    "config": {
+      "options_ru": ["Да, срочно — есть вопросы","Да, в ближайшую неделю","Нет, спасибо"],
+      "options_uz_cyr": ["Ҳа, шошилинч — саволлар бор","Ҳа, яқин ҳафта ичида","Йўқ, раҳмат"],
+      "options_uz_lat": ["Ha, shoshilinch — savollar bor","Ha, yaqin hafta ichida","Yoʻq, rahmat"]
+    },
+    "show_if": null
   }
 ]

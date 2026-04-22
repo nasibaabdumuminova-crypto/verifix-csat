@@ -31,13 +31,21 @@ if (USE_DB) {
 }
 
 // ========================================================================
-// SEED DATA — initial 39 questions (from Verifix Google Form v2)
-// Loaded from seed_questions.json so Python preview server can share the same source.
+// SEED DATA — loaded from seed_questions.json (trilingual)
 // ========================================================================
 const SEED_QUESTIONS = JSON.parse(fs.readFileSync(path.join(__dirname, 'seed_questions.json'), 'utf-8'));
+const LANGS = ['ru', 'uz_cyr', 'uz_lat'];
+const DEFAULT_LANG = 'ru';
+
+// Helper: safely extract a localized string
+function tr(x, lang) {
+  if (x == null) return '';
+  if (typeof x === 'string') return x;
+  return x[lang] || x[DEFAULT_LANG] || x.ru || Object.values(x)[0] || '';
+}
 
 // ========================================================================
-// DB INIT
+// DB INIT + MIGRATION
 // ========================================================================
 async function initDb() {
   if (!USE_DB) {
@@ -45,7 +53,7 @@ async function initDb() {
     seedMemoryQuestions();
     return;
   }
-  // Legacy reviews table (unchanged)
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reviews (
       id SERIAL PRIMARY KEY,
@@ -55,17 +63,31 @@ async function initDb() {
     );
   `);
 
-  // Survey tables
+  // Check if old v1 schema exists (has `section_number` column instead of `step_number`).
+  // If so, drop all survey_* tables and recreate with new schema.
+  const oldSchema = await pool.query(`
+    SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'survey_questions' AND column_name IN ('section_number','step_number')
+  `);
+  const hasOld = oldSchema.rows.some((r) => r.column_name === 'section_number');
+  const hasNew = oldSchema.rows.some((r) => r.column_name === 'step_number');
+  if (hasOld && !hasNew) {
+    console.log('Migrating survey tables from v1 (section_number) to v9 (step_number, i18n)…');
+    await pool.query('DROP TABLE IF EXISTS survey_answers CASCADE');
+    await pool.query('DROP TABLE IF EXISTS survey_responses CASCADE');
+    await pool.query('DROP TABLE IF EXISTS survey_questions CASCADE');
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS survey_questions (
       id SERIAL PRIMARY KEY,
       key TEXT UNIQUE NOT NULL,
-      section_number INT NOT NULL,
-      section_title TEXT NOT NULL,
-      section_help TEXT,
+      step_number INT NOT NULL,
+      step_title JSONB NOT NULL,
+      step_help JSONB,
       position INT NOT NULL,
-      title TEXT NOT NULL,
-      help_text TEXT,
+      title JSONB NOT NULL,
+      help_text JSONB,
       type TEXT NOT NULL CHECK (type IN ('short_text','long_text','radio','checkbox','scale')),
       required BOOLEAN NOT NULL DEFAULT FALSE,
       config JSONB,
@@ -77,7 +99,10 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS survey_responses (
       id SERIAL PRIMARY KEY,
       company_name TEXT NOT NULL,
-      email TEXT NOT NULL,
+      contact_name TEXT,
+      position TEXT,
+      phone TEXT,
+      language TEXT NOT NULL DEFAULT 'ru',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
@@ -99,16 +124,21 @@ async function initDb() {
   if (parseInt(countRow.rows[0].c, 10) === 0) {
     for (const q of SEED_QUESTIONS) {
       await pool.query(
-        `INSERT INTO survey_questions (key, section_number, section_title, section_help, position, title, help_text, type, required, config, show_if)
+        `INSERT INTO survey_questions (key, step_number, step_title, step_help, position, title, help_text, type, required, config, show_if)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
          ON CONFLICT (key) DO NOTHING`,
-        [q.key, q.section_number, q.section_title, q.section_help || null, q.position, q.title,
-         q.help_text || null, q.type, !!q.required,
-         q.config ? JSON.stringify(q.config) : null,
-         q.show_if ? JSON.stringify(q.show_if) : null]
+        [
+          q.key, q.step_number,
+          JSON.stringify(q.step_title), q.step_help ? JSON.stringify(q.step_help) : null,
+          q.position,
+          JSON.stringify(q.title), q.help_text ? JSON.stringify(q.help_text) : null,
+          q.type, !!q.required,
+          q.config ? JSON.stringify(q.config) : null,
+          q.show_if ? JSON.stringify(q.show_if) : null,
+        ]
       );
     }
-    console.log(`Seeded ${SEED_QUESTIONS.length} survey questions`);
+    console.log(`Seeded ${SEED_QUESTIONS.length} survey questions (v9 trilingual)`);
   }
   console.log('DB ready');
 }
@@ -119,9 +149,9 @@ function seedMemoryQuestions() {
     memStore.questions.push({
       id: memStore.nextQuestionId++,
       key: q.key,
-      section_number: q.section_number,
-      section_title: q.section_title,
-      section_help: q.section_help || null,
+      step_number: q.step_number,
+      step_title: q.step_title,
+      step_help: q.step_help || null,
       position: q.position,
       title: q.title,
       help_text: q.help_text || null,
@@ -140,25 +170,32 @@ function seedMemoryQuestions() {
 async function getAllQuestions({ includeDeleted = false } = {}) {
   if (USE_DB) {
     const sql = includeDeleted
-      ? 'SELECT * FROM survey_questions ORDER BY section_number, position, id'
-      : 'SELECT * FROM survey_questions WHERE deleted_at IS NULL ORDER BY section_number, position, id';
+      ? 'SELECT * FROM survey_questions ORDER BY step_number, position, id'
+      : 'SELECT * FROM survey_questions WHERE deleted_at IS NULL ORDER BY step_number, position, id';
     const r = await pool.query(sql);
     return r.rows;
   }
   return memStore.questions
     .filter((q) => includeDeleted || !q.deleted_at)
-    .sort((a, b) => a.section_number - b.section_number || a.position - b.position || a.id - b.id);
+    .sort((a, b) => a.step_number - b.step_number || a.position - b.position || a.id - b.id);
 }
 
 async function createQuestion(q) {
   if (USE_DB) {
     const r = await pool.query(
-      `INSERT INTO survey_questions (key, section_number, section_title, section_help, position, title, help_text, type, required, config, show_if)
+      `INSERT INTO survey_questions (key, step_number, step_title, step_help, position, title, help_text, type, required, config, show_if)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [q.key, q.section_number, q.section_title, q.section_help || null, q.position, q.title,
-       q.help_text || null, q.type, !!q.required,
-       q.config ? JSON.stringify(q.config) : null,
-       q.show_if ? JSON.stringify(q.show_if) : null]
+      [
+        q.key, q.step_number,
+        JSON.stringify(q.step_title || {}),
+        q.step_help ? JSON.stringify(q.step_help) : null,
+        q.position,
+        JSON.stringify(q.title || {}),
+        q.help_text ? JSON.stringify(q.help_text) : null,
+        q.type, !!q.required,
+        q.config ? JSON.stringify(q.config) : null,
+        q.show_if ? JSON.stringify(q.show_if) : null,
+      ]
     );
     return r.rows[0];
   }
@@ -172,9 +209,9 @@ async function updateQuestion(id, q) {
     const r = await pool.query(
       `UPDATE survey_questions SET
          key=COALESCE($2, key),
-         section_number=COALESCE($3, section_number),
-         section_title=COALESCE($4, section_title),
-         section_help=$5,
+         step_number=COALESCE($3, step_number),
+         step_title=COALESCE($4, step_title),
+         step_help=$5,
          position=COALESCE($6, position),
          title=COALESCE($7, title),
          help_text=$8,
@@ -183,10 +220,17 @@ async function updateQuestion(id, q) {
          config=$11,
          show_if=$12
        WHERE id=$1 RETURNING *`,
-      [id, q.key, q.section_number, q.section_title, q.section_help ?? null,
-       q.position, q.title, q.help_text ?? null, q.type, q.required,
-       q.config ? JSON.stringify(q.config) : null,
-       q.show_if ? JSON.stringify(q.show_if) : null]
+      [
+        id, q.key, q.step_number,
+        q.step_title ? JSON.stringify(q.step_title) : null,
+        q.step_help ? JSON.stringify(q.step_help) : null,
+        q.position,
+        q.title ? JSON.stringify(q.title) : null,
+        q.help_text ? JSON.stringify(q.help_text) : null,
+        q.type, q.required,
+        q.config ? JSON.stringify(q.config) : null,
+        q.show_if ? JSON.stringify(q.show_if) : null,
+      ]
     );
     return r.rows[0];
   }
@@ -205,14 +249,16 @@ async function deleteQuestion(id) {
   if (row) row.deleted_at = new Date().toISOString();
 }
 
-async function insertResponse({ company_name, email, answers }) {
+async function insertResponse(payload) {
+  const { company_name, contact_name, position, phone, language, answers } = payload;
   if (USE_DB) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const r = await client.query(
-        'INSERT INTO survey_responses (company_name, email) VALUES ($1, $2) RETURNING id, created_at',
-        [company_name, email]
+        `INSERT INTO survey_responses (company_name, contact_name, position, phone, language)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`,
+        [company_name, contact_name || null, position || null, phone || null, language || 'ru']
       );
       const respId = r.rows[0].id;
       for (const a of answers) {
@@ -233,7 +279,8 @@ async function insertResponse({ company_name, email, answers }) {
   }
   const resp = {
     id: memStore.nextResponseId++,
-    company_name, email,
+    company_name, contact_name, position, phone,
+    language: language || 'ru',
     created_at: new Date().toISOString(),
   };
   memStore.responses.unshift(resp);
@@ -256,11 +303,10 @@ async function getAllResponses() {
     const answers = await pool.query('SELECT * FROM survey_answers');
     const byResp = {};
     for (const a of answers.rows) {
-      const v = a.value;
       (byResp[a.response_id] = byResp[a.response_id] || []).push({
         question_id: a.question_id,
         question_key: a.question_key,
-        value: v,
+        value: a.value,
       });
     }
     return resp.rows.map((r) => ({ ...r, answers: byResp[r.id] || [] }));
@@ -303,7 +349,36 @@ async function getReviews() {
 }
 
 // ========================================================================
-// STATS (computed in JS from responses)
+// Branching evaluator
+// show_if formats:
+//   { question_key, values: [...] }                     — legacy (values-in)
+//   { question_key, op: 'in',  values: [...] }
+//   { question_key, op: 'eq',  value: X }
+//   { question_key, op: 'lte', value: N } | 'gte' | 'lt' | 'gt'
+// ========================================================================
+function isVisible(question, answerMap) {
+  const rule = question.show_if;
+  if (!rule) return true;
+  const v = answerMap.get(rule.question_key);
+  if (v === undefined) return false;
+  const op = rule.op || 'in';
+  if (op === 'in') {
+    const arr = rule.values || [];
+    if (Array.isArray(v)) return v.some((x) => arr.includes(x));
+    return arr.includes(v);
+  }
+  if (op === 'eq') return v === rule.value;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return false;
+  if (op === 'lte') return n <= Number(rule.value);
+  if (op === 'gte') return n >= Number(rule.value);
+  if (op === 'lt') return n < Number(rule.value);
+  if (op === 'gt') return n > Number(rule.value);
+  return false;
+}
+
+// ========================================================================
+// STATS
 // ========================================================================
 function computeStats(responses) {
   const totalResponses = responses.length;
@@ -312,25 +387,20 @@ function computeStats(responses) {
     .filter(Boolean)
     .map((a) => a.value);
 
-  // NPS
   const npsValues = valByKey('nps').map(Number).filter((v) => Number.isFinite(v));
   const prom = npsValues.filter((v) => v >= 9).length;
   const det = npsValues.filter((v) => v <= 6).length;
   const neu = npsValues.length - prom - det;
   const npsScore = npsValues.length ? Math.round((prom - det) / npsValues.length * 100) : null;
 
-  // CSAT
   const avg = (arr) => arr.length ? +(arr.reduce((s, x) => s + x, 0) / arr.length).toFixed(2) : null;
   const csatProduct = avg(valByKey('csat_product').map(Number).filter(Number.isFinite));
-  const csatService = avg(valByKey('csat_service').map(Number).filter(Number.isFinite));
 
-  // Other scale averages
   const scales = {};
-  for (const key of ['interface_score', 'support_speed', 'support_quality', 'manager_score']) {
+  for (const key of ['web_ux_score', 'mobile_ux_score', 'support_score', 'manager_score']) {
     scales[key] = avg(valByKey(key).map(Number).filter(Number.isFinite));
   }
 
-  // Distributions for key categorical
   const distribution = (key) => {
     const out = {};
     for (const v of valByKey(key)) {
@@ -340,18 +410,27 @@ function computeStats(responses) {
     return out;
   };
 
+  // Language distribution
+  const langDist = {};
+  for (const r of responses) {
+    const l = r.language || 'ru';
+    langDist[l] = (langDist[l] || 0) + 1;
+  }
+
   return {
     totalResponses,
     nps: { score: npsScore, promoters: prom, neutrals: neu, detractors: det, count: npsValues.length },
     csatProduct,
-    csatService,
     scales,
     distributions: {
       roi_category: distribution('roi_category'),
       renewal_intent: distribution('renewal_intent'),
-      alternatives: distribution('alternatives'),
-      bug_frequency: distribution('bug_frequency'),
+      industry: distribution('industry'),
+      company_size: distribution('company_size'),
+      mobile_usage: distribution('mobile_usage'),
+      callback_request: distribution('callback_request'),
     },
+    languageDistribution: langDist,
   };
 }
 
@@ -400,46 +479,53 @@ app.get('/api/admin/reviews', requireAuth, async (req, res) => {
 app.get('/api/survey/questions', async (req, res) => {
   try {
     const qs = await getAllQuestions();
-    res.json({ questions: qs });
+    res.json({ questions: qs, languages: LANGS });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
 app.post('/api/survey/responses', async (req, res) => {
   try {
-    const { company_name, email, answers } = req.body || {};
+    const { company_name, contact_name, position, phone, language, answers } = req.body || {};
     if (!company_name || !String(company_name).trim()) {
       return res.status(400).json({ error: 'Укажите название компании' });
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
-      return res.status(400).json({ error: 'Укажите корректный email' });
+    if (!contact_name || !String(contact_name).trim()) {
+      return res.status(400).json({ error: 'Укажите ФИО' });
+    }
+    if (!phone || !/^[\+\-\d\s()]{5,}$/.test(String(phone))) {
+      return res.status(400).json({ error: 'Укажите корректный номер телефона' });
     }
     if (!Array.isArray(answers)) {
       return res.status(400).json({ error: 'Некорректный формат ответов' });
     }
+    const lang = LANGS.includes(language) ? language : DEFAULT_LANG;
 
-    // Validate required questions answered
     const questions = await getAllQuestions();
     const answerMap = new Map();
     for (const a of answers) {
       if (a && a.question_key) answerMap.set(a.question_key, a.value);
     }
+    // Merge identity fields so validation for questions with matching keys passes
+    if (company_name) answerMap.set('company_name', String(company_name));
+    if (contact_name) answerMap.set('contact_name', String(contact_name));
+    if (position)     answerMap.set('position',     String(position));
+    if (phone)        answerMap.set('phone',        String(phone));
+
+    const IDENTITY_KEYS = new Set(['company_name', 'contact_name', 'position', 'phone']);
     for (const q of questions) {
       if (!q.required) continue;
-      // Skip required check if the question is hidden by show_if
-      if (q.show_if) {
-        const triggerVal = answerMap.get(q.show_if.question_key);
-        const isVisible = Array.isArray(q.show_if.values) && q.show_if.values.includes(triggerVal);
-        if (!isVisible) continue;
-      }
+      if (IDENTITY_KEYS.has(q.key)) continue; // already validated above
+      if (!isVisible(q, answerMap)) continue;
       const v = answerMap.get(q.key);
       const empty = v === undefined || v === null || v === '' ||
                     (Array.isArray(v) && v.length === 0);
       if (empty) {
-        return res.status(400).json({ error: `Ответьте на обязательный вопрос: «${q.title}»` });
+        return res.status(400).json({
+          error: `Ответьте на обязательный вопрос: «${tr(q.title, lang)}»`,
+        });
       }
     }
 
-    // Build ordered answer rows
     const byKey = new Map(questions.map((q) => [q.key, q]));
     const rows = [];
     for (const a of answers) {
@@ -451,7 +537,10 @@ app.post('/api/survey/responses', async (req, res) => {
 
     const result = await insertResponse({
       company_name: String(company_name).trim().slice(0, 200),
-      email: String(email).trim().toLowerCase().slice(0, 200),
+      contact_name: contact_name ? String(contact_name).trim().slice(0, 200) : null,
+      position: position ? String(position).trim().slice(0, 200) : null,
+      phone: phone ? String(phone).trim().slice(0, 50) : null,
+      language: lang,
       answers: rows,
     });
     res.json({ ok: true, id: result.id });
@@ -488,16 +577,16 @@ app.get('/api/admin/survey/questions', requireAuth, async (req, res) => {
 app.post('/api/admin/survey/questions', requireAuth, async (req, res) => {
   try {
     const q = req.body || {};
-    if (!q.key || !q.title || !q.type || !q.section_number || !q.section_title) {
-      return res.status(400).json({ error: 'Заполните ключ, заголовок, тип, номер и название секции' });
+    if (!q.key || !q.title || !q.type || !q.step_number || !q.step_title) {
+      return res.status(400).json({ error: 'Заполните ключ, заголовок, тип, номер и название шага' });
     }
     const row = await createQuestion({
       key: String(q.key).trim(),
-      section_number: parseInt(q.section_number, 10),
-      section_title: String(q.section_title),
-      section_help: q.section_help || null,
+      step_number: parseInt(q.step_number, 10),
+      step_title: q.step_title,
+      step_help: q.step_help || null,
       position: q.position ? parseInt(q.position, 10) : 99,
-      title: String(q.title),
+      title: q.title,
       help_text: q.help_text || null,
       type: q.type,
       required: !!q.required,
@@ -517,9 +606,9 @@ app.put('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
     const q = req.body || {};
     const row = await updateQuestion(id, {
       key: q.key,
-      section_number: q.section_number != null ? parseInt(q.section_number, 10) : undefined,
-      section_title: q.section_title,
-      section_help: q.section_help,
+      step_number: q.step_number != null ? parseInt(q.step_number, 10) : undefined,
+      step_title: q.step_title,
+      step_help: q.step_help,
       position: q.position != null ? parseInt(q.position, 10) : undefined,
       title: q.title,
       help_text: q.help_text,
@@ -543,11 +632,15 @@ app.delete('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
-// CSV export
+// CSV export — includes language column, question titles in RU
 app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
   try {
-    const [responses, questions] = await Promise.all([getAllResponses(), getAllQuestions({ includeDeleted: true })]);
-    const cols = ['id', 'created_at', 'company_name', 'email', ...questions.map((q) => q.key)];
+    const [responses, questions] = await Promise.all([
+      getAllResponses(),
+      getAllQuestions({ includeDeleted: true }),
+    ]);
+    const cols = ['id', 'created_at', 'language', 'company_name', 'contact_name', 'position', 'phone',
+                  ...questions.map((q) => q.key)];
     const escape = (s) => {
       if (s === null || s === undefined) return '';
       const str = Array.isArray(s) ? s.join(' | ') : String(s);
@@ -556,7 +649,11 @@ app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
     const lines = [cols.join(',')];
     for (const r of responses) {
       const byKey = new Map(r.answers.map((a) => [a.question_key, a.value]));
-      const row = [r.id, r.created_at, r.company_name, r.email, ...questions.map((q) => escape(byKey.get(q.key)))];
+      const row = [
+        r.id, r.created_at, r.language || 'ru',
+        r.company_name, r.contact_name || '', r.position || '', r.phone || '',
+        ...questions.map((q) => escape(byKey.get(q.key))),
+      ];
       lines.push(row.map((x) => (typeof x === 'string' && x.startsWith('"') ? x : escape(x))).join(','));
     }
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');

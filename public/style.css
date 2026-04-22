@@ -716,3 +716,106 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   margin-top: 20px;
 }
 .modal-actions .btn-primary { width: auto; margin: 0; min-width: 140px; }
+
+/* ================================================================== */
+/* ========== LANGUAGE SELECTOR (v9)                          ======== */
+/* ================================================================== */
+.lang-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 28px;
+}
+@media (min-width: 560px) { .lang-options { grid-template-columns: repeat(3, 1fr); } }
+
+.lang-opt {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--c-card-border);
+  border-radius: 16px;
+  padding: 24px 18px;
+  color: var(--c-text);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.2s, box-shadow 0.2s;
+  text-align: center;
+  font-family: inherit;
+}
+.lang-opt:hover {
+  transform: translateY(-2px);
+  border-color: var(--c-violet);
+  background: rgba(123,63,242,0.12);
+  box-shadow: 0 8px 22px rgba(123,63,242,0.25);
+}
+.lang-code {
+  font-size: 28px;
+  font-weight: 800;
+  background: var(--grad-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.lang-name {
+  font-size: 14px;
+  color: var(--c-muted);
+  line-height: 1.3;
+}
+
+.lang-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.lang-current {
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.btn-ghost.lang-change {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.lang-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(123,63,242,0.18);
+  color: #d0c0ff;
+  font-size: 12px;
+  margin-left: 6px;
+}
+.lang-breakdown {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ========== LANG TABS INSIDE MODAL ========== */
+.lang-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 0;
+}
+.lang-tab {
+  background: transparent;
+  border: none;
+  color: var(--c-muted);
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+}
+.lang-tab:hover { color: var(--c-text); }
+.lang-tab.active {
+  color: var(--c-text);
+  border-bottom-color: var(--c-violet);
+}
+.lang-panels { min-height: 240px; }

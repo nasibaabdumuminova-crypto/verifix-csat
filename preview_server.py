@@ -1,8 +1,7 @@
 """
-Локальный preview-сервер на Python.
-Поддерживает и старую форму (5 звёзд), и новый опросник + админ-дашборд.
-Все данные — в памяти. Seed вопросов читается из seed_questions.json.
-Для продакшена — server.js + PostgreSQL.
+Локальный preview-сервер на Python. Поддерживает трёхъязычный опросник v9
+(RU / UZ-Cyr / UZ-Lat), старую 5-звёздочную форму и полный админ-API.
+Seed вопросов читается из seed_questions.json. Данные в памяти.
 """
 import copy
 import csv
@@ -20,15 +19,26 @@ BASE_DIR = os.path.dirname(__file__)
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 SEED_PATH = os.path.join(BASE_DIR, "seed_questions.json")
 
+LANGS = ["ru", "uz_cyr", "uz_lat"]
+DEFAULT_LANG = "ru"
+
 # ========== In-memory stores ==========
-reviews = []                # legacy
+reviews = []
 next_review_id = 1
-questions = []              # list of dicts (same shape as seed)
+questions = []
 next_question_id = 1
-responses = []              # [{id, company_name, email, created_at}]
+responses = []
 next_response_id = 1
-answers = []                # [{id, response_id, question_id, question_key, value, created_at}]
+answers = []
 next_answer_id = 1
+
+
+def tr(x, lang):
+    if x is None:
+        return ""
+    if isinstance(x, str):
+        return x
+    return x.get(lang) or x.get(DEFAULT_LANG) or x.get("ru") or (list(x.values())[0] if x else "")
 
 
 def load_seed():
@@ -45,7 +55,7 @@ def load_seed():
         q2.setdefault("show_if", None)
         q2.setdefault("config", None)
         q2.setdefault("help_text", None)
-        q2.setdefault("section_help", None)
+        q2.setdefault("step_help", None)
         next_question_id += 1
         questions.append(q2)
 
@@ -53,12 +63,36 @@ def load_seed():
 def get_visible_questions():
     return sorted(
         (q for q in questions if not q.get("deleted_at")),
-        key=lambda q: (q["section_number"], q["position"], q["id"]),
+        key=lambda q: (q["step_number"], q["position"], q["id"]),
     )
 
 
 def get_all_questions():
-    return sorted(questions, key=lambda q: (q["section_number"], q["position"], q["id"]))
+    return sorted(questions, key=lambda q: (q["step_number"], q["position"], q["id"]))
+
+
+def is_visible(question, answer_map):
+    rule = question.get("show_if")
+    if not rule:
+        return True
+    v = answer_map.get(rule.get("question_key"))
+    if v is None:
+        return False
+    op = rule.get("op", "in")
+    if op == "in":
+        arr = rule.get("values", [])
+        if isinstance(v, list):
+            return any(x in arr for x in v)
+        return v in arr
+    if op == "eq":
+        return v == rule.get("value")
+    try:
+        n = float(v)
+    except (TypeError, ValueError):
+        return False
+    target = float(rule.get("value"))
+    return {"lte": n <= target, "gte": n >= target,
+            "lt": n < target, "gt": n > target}.get(op, False)
 
 
 # ========== Stats ==========
@@ -97,28 +131,36 @@ def compute_stats():
             out[k] = out.get(k, 0) + 1
         return out
 
+    lang_dist = {}
+    for r in responses:
+        l = r.get("language", "ru")
+        lang_dist[l] = lang_dist.get(l, 0) + 1
+
     return {
         "totalResponses": len(responses),
-        "nps": {"score": nps_score, "promoters": prom, "neutrals": neu, "detractors": det, "count": len(nps_vals)},
+        "nps": {"score": nps_score, "promoters": prom, "neutrals": neu,
+                "detractors": det, "count": len(nps_vals)},
         "csatProduct": avg(num_vals("csat_product")),
-        "csatService": avg(num_vals("csat_service")),
         "scales": {
-            "interface_score": avg(num_vals("interface_score")),
-            "support_speed": avg(num_vals("support_speed")),
-            "support_quality": avg(num_vals("support_quality")),
+            "web_ux_score": avg(num_vals("web_ux_score")),
+            "mobile_ux_score": avg(num_vals("mobile_ux_score")),
+            "support_score": avg(num_vals("support_score")),
             "manager_score": avg(num_vals("manager_score")),
         },
         "distributions": {
             "roi_category": distribution("roi_category"),
             "renewal_intent": distribution("renewal_intent"),
-            "alternatives": distribution("alternatives"),
-            "bug_frequency": distribution("bug_frequency"),
+            "industry": distribution("industry"),
+            "company_size": distribution("company_size"),
+            "mobile_usage": distribution("mobile_usage"),
+            "callback_request": distribution("callback_request"),
         },
+        "languageDistribution": lang_dist,
     }
 
 
 # ========== HTTP handler ==========
-EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+PHONE_RE = re.compile(r"^[\+\-\d\s()]{5,}$")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -166,7 +208,6 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         path = url.path
 
-        # Static files / pages
         static_map = {
             "/": ("index.html", "text/html; charset=utf-8"),
             "/index.html": ("index.html", "text/html; charset=utf-8"),
@@ -183,12 +224,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_file(fn, ct)
 
         if path == "/healthz":
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"ok")
-            return
+            self.send_response(200); self.end_headers(); self.wfile.write(b"ok"); return
 
-        # Legacy reviews admin
         if path == "/api/admin/reviews":
             if not self._check_auth(url):
                 return self._send_json(401, {"error": "Неверный пароль"})
@@ -196,11 +233,9 @@ class Handler(BaseHTTPRequestHandler):
             avg = round(sum(r["rating"] for r in reviews) / total, 2) if total else 0
             return self._send_json(200, {"avg": avg, "total": total, "reviews": reviews})
 
-        # Survey public
         if path == "/api/survey/questions":
-            return self._send_json(200, {"questions": get_visible_questions()})
+            return self._send_json(200, {"questions": get_visible_questions(), "languages": LANGS})
 
-        # Survey admin
         if path == "/api/admin/survey/stats":
             if not self._check_auth(url):
                 return self._send_json(401, {"error": "Неверный пароль"})
@@ -235,7 +270,6 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         path = url.path
 
-        # Legacy review submission
         if path == "/api/reviews":
             data = self._read_body()
             if data is None:
@@ -255,37 +289,55 @@ class Handler(BaseHTTPRequestHandler):
             next_review_id += 1
             return self._send_json(200, {"ok": True})
 
-        # Survey submission
         if path == "/api/survey/responses":
             data = self._read_body()
             if data is None:
                 return self._send_json(400, {"error": "Bad JSON"})
             company = (data.get("company_name") or "").strip()
-            email = (data.get("email") or "").strip().lower()
+            contact = (data.get("contact_name") or "").strip()
+            position = (data.get("position") or "").strip()
+            phone = (data.get("phone") or "").strip()
+            lang = data.get("language") or DEFAULT_LANG
+            if lang not in LANGS:
+                lang = DEFAULT_LANG
             answers_in = data.get("answers") or []
             if not company:
                 return self._send_json(400, {"error": "Укажите название компании"})
-            if not EMAIL_RE.match(email):
-                return self._send_json(400, {"error": "Укажите корректный email"})
+            if not contact:
+                return self._send_json(400, {"error": "Укажите ФИО"})
+            if not PHONE_RE.match(phone):
+                return self._send_json(400, {"error": "Укажите корректный номер телефона"})
             if not isinstance(answers_in, list):
                 return self._send_json(400, {"error": "Некорректный формат ответов"})
 
             answer_map = {a.get("question_key"): a.get("value") for a in answers_in if isinstance(a, dict)}
+            # Merge identity fields so validation for questions with matching keys passes
+            if company: answer_map["company_name"] = company
+            if contact: answer_map["contact_name"] = contact
+            if position: answer_map["position"] = position
+            if phone: answer_map["phone"] = phone
+
+            IDENTITY = {"company_name", "contact_name", "position", "phone"}
             for q in get_visible_questions():
                 if not q.get("required"):
                     continue
-                if q.get("show_if"):
-                    trig = answer_map.get(q["show_if"]["question_key"])
-                    if trig not in q["show_if"].get("values", []):
-                        continue
+                if q["key"] in IDENTITY:
+                    continue
+                if not is_visible(q, answer_map):
+                    continue
                 v = answer_map.get(q["key"])
                 empty = v is None or v == "" or (isinstance(v, list) and not v)
                 if empty:
-                    return self._send_json(400, {"error": f"Ответьте на обязательный вопрос: «{q['title']}»"})
+                    return self._send_json(400, {"error": f"Ответьте на обязательный вопрос: «{tr(q['title'], lang)}»"})
 
             global next_response_id, next_answer_id
             resp = {
-                "id": next_response_id, "company_name": company[:200], "email": email[:200],
+                "id": next_response_id,
+                "company_name": company[:200],
+                "contact_name": contact[:200] if contact else None,
+                "position": position[:200] if position else None,
+                "phone": phone[:50] if phone else None,
+                "language": lang,
                 "created_at": datetime.now().isoformat(),
             }
             next_response_id += 1
@@ -304,21 +356,20 @@ class Handler(BaseHTTPRequestHandler):
                 next_answer_id += 1
             return self._send_json(200, {"ok": True, "id": resp["id"]})
 
-        # Admin: create question
         if path == "/api/admin/survey/questions":
             if not self._check_auth(url):
                 return self._send_json(401, {"error": "Неверный пароль"})
             body = self._read_body() or {}
             if not body.get("key") or not body.get("title") or not body.get("type") \
-               or not body.get("section_number") or not body.get("section_title"):
-                return self._send_json(400, {"error": "Заполните ключ, заголовок, тип, номер и название секции"})
+               or not body.get("step_number") or not body.get("step_title"):
+                return self._send_json(400, {"error": "Заполните ключ, заголовок, тип, номер и название шага"})
             global next_question_id
             row = {
                 "id": next_question_id,
                 "key": body["key"].strip(),
-                "section_number": int(body["section_number"]),
-                "section_title": body["section_title"],
-                "section_help": body.get("section_help"),
+                "step_number": int(body["step_number"]),
+                "step_title": body["step_title"],
+                "step_help": body.get("step_help"),
                 "position": int(body.get("position") or 99),
                 "title": body["title"],
                 "help_text": body.get("help_text"),
@@ -347,14 +398,14 @@ class Handler(BaseHTTPRequestHandler):
         q = next((x for x in questions if x["id"] == qid), None)
         if not q:
             return self._send_json(404, {"error": "Вопрос не найден"})
-        for k in ("key", "section_title", "title", "type"):
+        for k in ("key", "step_title", "title", "type"):
             if body.get(k) is not None:
                 q[k] = body[k]
-        for k in ("section_help", "help_text", "config", "show_if"):
+        for k in ("step_help", "help_text", "config", "show_if"):
             if k in body:
                 q[k] = body[k]
-        if body.get("section_number") is not None:
-            q["section_number"] = int(body["section_number"])
+        if body.get("step_number") is not None:
+            q["step_number"] = int(body["step_number"])
         if body.get("position") is not None:
             q["position"] = int(body["position"])
         if "required" in body:
@@ -378,7 +429,8 @@ class Handler(BaseHTTPRequestHandler):
     # =============== CSV ===============
     def _send_csv(self):
         qs = get_all_questions()
-        cols = ["id", "created_at", "company_name", "email"] + [q["key"] for q in qs]
+        cols = ["id", "created_at", "language", "company_name", "contact_name", "position", "phone"] \
+               + [q["key"] for q in qs]
         buf = io.StringIO()
         buf.write("\ufeff")
         writer = csv.writer(buf)
@@ -388,7 +440,9 @@ class Handler(BaseHTTPRequestHandler):
             for a in answers:
                 if a["response_id"] == r["id"]:
                     by_key[a["question_key"]] = a["value"]
-            row = [r["id"], r["created_at"], r["company_name"], r["email"]]
+            row = [r["id"], r["created_at"], r.get("language", "ru"),
+                   r["company_name"], r.get("contact_name") or "",
+                   r.get("position") or "", r.get("phone") or ""]
             for q in qs:
                 v = by_key.get(q["key"])
                 if isinstance(v, list):
@@ -410,7 +464,7 @@ if __name__ == "__main__":
     load_seed()
     print(f"Verifix preview on http://localhost:{PORT}")
     print(f"  /         — короткая форма (5 звёзд)")
-    print(f"  /survey   — полный опросник")
+    print(f"  /survey   — трёхъязычный опросник")
     print(f"  /admin        — NPS Radar (пароль: {ADMIN_PASSWORD})")
-    print(f"  /admin/survey — дашборд опросника (тот же пароль)")
+    print(f"  /admin/survey — дашборд опросника")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
