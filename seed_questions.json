@@ -508,7 +508,13 @@
         "Mobil ilova",
         "Kerakli hamma narsadan foydalanmoqdamiz"
       ],
-      "allow_other": true
+      "allow_other": true,
+      "other_placeholder": {
+        "ru": "Укажите модуль…",
+        "uz_cyr": "Модулни кўрсатинг…",
+        "uz_lat": "Modulni koʻrsating…"
+      },
+      "other_min_length": 2
     },
     "show_if": null
   },
@@ -971,8 +977,11 @@
       "uz_lat": "Vergul bilan ajratib sanashingiz mumkin."
     },
     "type": "long_text",
-    "required": false,
-    "config": null,
+    "required": true,
+    "config": {
+      "min_length": 3,
+      "max_length": 1000
+    },
     "show_if": null
   },
   {
