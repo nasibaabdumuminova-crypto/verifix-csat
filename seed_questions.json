@@ -602,6 +602,10 @@
         "ru": "Точно порекомендую",
         "uz_cyr": "Албатта тавсия қиламан",
         "uz_lat": "Albatta tavsiya qilaman"
+      },
+      "anchors": {
+        "left_emoji": "😕",
+        "right_emoji": "😍"
       }
     },
     "show_if": null
@@ -634,7 +638,12 @@
     "show_if": {
       "question_key": "nps",
       "op": "in",
-      "values": [0, 1, 2, 3]
+      "values": [
+        0,
+        1,
+        2,
+        3
+      ]
     }
   },
   {
@@ -665,7 +674,11 @@
     "show_if": {
       "question_key": "nps",
       "op": "in",
-      "values": [4, 5, 6]
+      "values": [
+        4,
+        5,
+        6
+      ]
     }
   },
   {
@@ -696,7 +709,10 @@
     "show_if": {
       "question_key": "nps",
       "op": "in",
-      "values": [7, 8]
+      "values": [
+        7,
+        8
+      ]
     }
   },
   {
@@ -727,7 +743,10 @@
     "show_if": {
       "question_key": "nps",
       "op": "in",
-      "values": [9, 10]
+      "values": [
+        9,
+        10
+      ]
     }
   },
   {
@@ -758,6 +777,10 @@
         "ru": "Полностью доволен",
         "uz_cyr": "Тўлиқ мамнун",
         "uz_lat": "Toʻliq mamnun"
+      },
+      "anchors": {
+        "left_emoji": "😕",
+        "right_emoji": "😍"
       }
     },
     "show_if": null
@@ -790,6 +813,10 @@
         "ru": "Очень удобно",
         "uz_cyr": "Жуда қулай",
         "uz_lat": "Juda qulay"
+      },
+      "anchors": {
+        "left_emoji": "😕",
+        "right_emoji": "😊"
       }
     },
     "show_if": null
@@ -886,6 +913,10 @@
         "ru": "Очень удобно",
         "uz_cyr": "Жуда қулай",
         "uz_lat": "Juda qulay"
+      },
+      "anchors": {
+        "left_emoji": "😕",
+        "right_emoji": "😊"
       }
     },
     "show_if": {
@@ -972,6 +1003,10 @@
         "ru": "Отлично",
         "uz_cyr": "Аъло",
         "uz_lat": "Aʼlo"
+      },
+      "anchors": {
+        "left_emoji": "😕",
+        "right_emoji": "😍"
       }
     },
     "show_if": null
@@ -1027,6 +1062,10 @@
         "ru": "Отлично",
         "uz_cyr": "Аъло",
         "uz_lat": "Aʼlo"
+      },
+      "anchors": {
+        "left_emoji": "😕",
+        "right_emoji": "😍"
       }
     },
     "show_if": {

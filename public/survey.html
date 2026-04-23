@@ -536,55 +536,60 @@ function renderQuestion(q) {
   } else if (q.type === 'scale') {
     const c = q.config || {};
     const min = c.min ?? 1, max = c.max ?? 5;
+    const count = max - min + 1;
     const low = c.low_label ? t(c.low_label) : '';
     const high = c.high_label ? t(c.high_label) : '';
-    const count = max - min + 1;
+    const leftEmoji = (c.anchors && c.anchors.left_emoji) || '😕';
+    const rightEmoji = (c.anchors && c.anchors.right_emoji) || '😍';
+    const isNps = min === 0 && max === 10 && count === 11;
 
-    // NPS-style scale: colour-zoned 0-10 with emoji anchors above.
-    const isNps = q.key === 'nps' || (min === 0 && max === 10 && count === 11);
+    // Colour-zone classifier. NPS: 0-6 / 7-8 / 9-10. 5-point: 1-2 / 3 / 4-5.
+    const zoneClass = (i) => {
+      if (isNps) return i <= 6 ? 'nps-det' : (i <= 8 ? 'nps-neu' : 'nps-pro');
+      return i <= 2 ? 'nps-det' : (i === 3 ? 'nps-neu' : 'nps-pro');
+    };
+    const ZONE_TEXT_COLOR = { 'nps-det': '#501313', 'nps-neu': '#633806', 'nps-pro': '#173404' };
 
-    if (isNps) {
-      const zoneClass = (i) => i <= 6 ? 'nps-det' : (i <= 8 ? 'nps-neu' : 'nps-pro');
-      const zoneLabel = (i) => {
-        if (i <= 6) return { ru: 'детрактор', uz_cyr: 'детрактор', uz_lat: 'detraktor' }[state.lang] || 'детрактор';
-        if (i <= 8) return { ru: 'нейтрал',   uz_cyr: 'нейтрал',   uz_lat: 'neytral'   }[state.lang] || 'нейтрал';
-        return                { ru: 'промоутер', uz_cyr: 'промоутер', uz_lat: 'promouter' }[state.lang] || 'промоутер';
-      };
-      let tiles = '';
-      for (let i = 0; i <= 10; i++) {
-        const checked = String(val) === String(i);
-        tiles += `<button type="button" class="nps-tile ${zoneClass(i)}${checked ? ' selected' : ''}" data-nps-key="${q.key}" data-nps-val="${i}" role="radio" aria-checked="${checked}" aria-label="${i} — ${zoneLabel(i)}" tabindex="${checked || (val === undefined && i === 0) ? '0' : '-1'}">${i}</button>`;
+    const zoneLabel = (i) => {
+      const z = zoneClass(i);
+      if (isNps) {
+        return { 'nps-det': { ru: 'детрактор', uz_cyr: 'детрактор', uz_lat: 'detraktor' },
+                 'nps-neu': { ru: 'нейтрал',   uz_cyr: 'нейтрал',   uz_lat: 'neytral' },
+                 'nps-pro': { ru: 'промоутер', uz_cyr: 'промоутер', uz_lat: 'promouter' } }[z][state.lang] || '';
       }
-      body = `
-        <div class="nps-scale-wrap">
-          <div class="nps-anchors" aria-hidden="true">
-            <div class="nps-anchor-left"><span class="nps-emo">😕</span><span>${escapeHtml(low)}</span></div>
-            <div class="nps-anchor-right"><span>${escapeHtml(high)}</span><span class="nps-emo">😍</span></div>
-          </div>
-          <div class="nps-scale" role="radiogroup" aria-label="${escapeAttr(t(q.title))}" data-nps-key="${q.key}">
-            ${tiles}
-          </div>
-        </div>`;
-    } else {
-      // Legacy scale variant (1-5 CSAT-like)
-      let items = '';
-      for (let i = min; i <= max; i++) {
-        const checked = String(val) === String(i) ? 'checked' : '';
-        items += `
-          <label class="scale-item scale-item-big">
-            <input type="radio" name="${q.key}" value="${i}" data-qkey="${q.key}" ${checked} />
-            <span class="scale-num">${i}</span>
-          </label>`;
-      }
-      body = `
-        <div class="scale scale-big">
-          <div class="scale-items" data-count="${count}">${items}</div>
-          <div class="scale-labels">
-            <span>${escapeHtml(low)}</span>
-            <span>${escapeHtml(high)}</span>
-          </div>
-        </div>`;
+      return '';
+    };
+
+    let tiles = '';
+    for (let i = min; i <= max; i++) {
+      const checked = String(val) === String(i);
+      const aria = zoneLabel(i) ? `${i} — ${zoneLabel(i)}` : String(i);
+      tiles += `<button type="button" class="nps-tile ${zoneClass(i)}${checked ? ' selected' : ''}" data-nps-key="${q.key}" data-nps-val="${i}" role="radio" aria-checked="${checked}" aria-label="${aria}" tabindex="${checked || (val === undefined && i === min) ? '0' : '-1'}">${i}</button>`;
     }
+
+    // Confirmation row: appears once a value is chosen.
+    const CONFIRM_LABEL = { ru: 'Ваша оценка:', uz_cyr: 'Сизнинг баҳоингиз:', uz_lat: 'Sizning bahoyingiz:' };
+    const confirmLabel = CONFIRM_LABEL[state.lang] || CONFIRM_LABEL.ru;
+    const selectedVal = (val !== undefined && val !== '' && !isNaN(Number(val))) ? Number(val) : null;
+    const confirmRow = selectedVal !== null
+      ? `<div class="rating-confirm">
+           <span class="rating-confirm-label">${escapeHtml(confirmLabel)}</span>
+           <span class="rating-confirm-value" style="color:${ZONE_TEXT_COLOR[zoneClass(selectedVal)]}">${selectedVal}</span>
+         </div>`
+      : '';
+
+    const scaleCountClass = isNps ? '' : ` nps-scale-${count}`;
+    body = `
+      <div class="nps-scale-wrap">
+        <div class="nps-anchors" aria-hidden="true">
+          <div class="nps-anchor-left"><span class="nps-emo">${leftEmoji}</span><span>${escapeHtml(low)}</span></div>
+          <div class="nps-anchor-right"><span>${escapeHtml(high)}</span><span class="nps-emo">${rightEmoji}</span></div>
+        </div>
+        <div class="nps-scale${scaleCountClass}" role="radiogroup" aria-label="${escapeAttr(t(q.title))}" data-nps-key="${q.key}">
+          ${tiles}
+        </div>
+        ${confirmRow}
+      </div>`;
   }
 
   return `
@@ -801,23 +806,19 @@ function bindEvents() {
     });
   });
 
-  // NPS tiles: click + keyboard navigation + haptic
+  // NPS / rating tiles: click + keyboard navigation + haptic
   document.querySelectorAll('.nps-tile').forEach((btn) => {
     const key = btn.dataset.npsKey;
     const val = Number(btn.dataset.npsVal);
     btn.addEventListener('click', () => {
+      // No-op if re-clicking the currently-selected tile
+      if (state.answers[key] === val) return;
       state.answers[key] = val;
-      // Update selection visuals without a full re-render to avoid scroll jump
-      document.querySelectorAll(`.nps-tile[data-nps-key="${key}"]`).forEach((t) => {
-        const v = Number(t.dataset.npsVal);
-        const sel = v === val;
-        t.classList.toggle('selected', sel);
-        t.setAttribute('aria-checked', sel ? 'true' : 'false');
-        t.setAttribute('tabindex', sel ? '0' : '-1');
-      });
       saveDraft();
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
-      if (dependentExists(key)) render({ scrollTo: false });
+      // Re-render the current screen so the confirmation row + colour
+      // of selected tile update correctly. No scroll jump.
+      render({ scrollTo: false });
     });
     btn.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
