@@ -112,7 +112,7 @@
     },
     "type": "short_text",
     "required": true,
-    "config": { "validate": "phone" },
+    "config": { "validate": "phone", "prefix": "+998 ", "placeholder": "+998 90 123 45 67" },
     "show_if": null
   },
 
@@ -160,9 +160,10 @@
     "type": "checkbox",
     "required": true,
     "config": {
-      "options_ru": ["Принимаю финальное решение о внедрении и продлении","Влияю на решение, но не принимаю напрямую","Отвечаю за настройку и администрирование системы","Использую Verifix в ежедневной работе","Другое"],
-      "options_uz_cyr": ["Жорий этиш ва муддатни узайтириш бўйича якуний қарор қабул қиламан","Қарорга таъсир қиламан, лекин бевосита қабул қилмайман","Тизимни созлаш ва бошқариш учун жавобгарман","Verifix-дан ҳар куни фойдаланаман","Бошқа"],
-      "options_uz_lat": ["Joriy etish va muddatni uzaytirish boʻyicha yakuniy qaror qabul qilaman","Qarorga taʼsir qilaman, lekin bevosita qabul qilmayman","Tizimni sozlash va boshqarish uchun javobgarman","Verifix-dan har kuni foydalanaman","Boshqa"]
+      "options_ru": ["Принимаю финальное решение о внедрении и продлении","Влияю на решение, но не принимаю напрямую","Отвечаю за настройку и администрирование системы","Использую Verifix в ежедневной работе"],
+      "options_uz_cyr": ["Жорий этиш ва муддатни узайтириш бўйича якуний қарор қабул қиламан","Қарорга таъсир қиламан, лекин бевосита қабул қилмайман","Тизимни созлаш ва бошқариш учун жавобгарман","Verifix-дан ҳар куни фойдаланаман"],
+      "options_uz_lat": ["Joriy etish va muddatni uzaytirish boʻyicha yakuniy qaror qabul qilaman","Qarorga taʼsir qilaman, lekin bevosita qabul qilmayman","Tizimni sozlash va boshqarish uchun javobgarman","Verifix-dan har kuni foydalanaman"],
+      "allow_other": true
     },
     "show_if": null
   },
@@ -257,9 +258,10 @@
     "type": "checkbox",
     "required": false,
     "config": {
-      "options_ru": ["КЭДО","AI Assistant","Verifix Perform (KPI)","Verifix Recruit (ATS, массовый подбор)","Verifix Talent Management","Мобильное приложение","Всё необходимое уже используем"],
-      "options_uz_cyr": ["КЭҲА (КЭДО)","AI Assistant","Verifix Perform (KPI)","Verifix Recruit (ATS, оммавий танлов)","Verifix Talent Management","Мобил илова","Керакли ҳамма нарсадан фойдаланмоқдамиз"],
-      "options_uz_lat": ["KEHA (KEDO)","AI Assistant","Verifix Perform (KPI)","Verifix Recruit (ATS, ommaviy tanlov)","Verifix Talent Management","Mobil ilova","Kerakli hamma narsadan foydalanmoqdamiz"]
+      "options_ru": ["КЭДО","Verifix Perform (KPI)","Verifix Recruit (ATS, массовый подбор)","Verifix Talent Management","Мобильное приложение","Всё необходимое уже используем"],
+      "options_uz_cyr": ["КЭҲА (КЭДО)","Verifix Perform (KPI)","Verifix Recruit (ATS, оммавий танлов)","Verifix Talent Management","Мобил илова","Керакли ҳамма нарсадан фойдаланмоқдамиз"],
+      "options_uz_lat": ["KEHA (KEDO)","Verifix Perform (KPI)","Verifix Recruit (ATS, ommaviy tanlov)","Verifix Talent Management","Mobil ilova","Kerakli hamma narsadan foydalanmoqdamiz"],
+      "allow_other": true
     },
     "show_if": null
   },

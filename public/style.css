@@ -471,6 +471,22 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   min-width: 40px;
   cursor: pointer;
 }
+
+/* Wide scales (NPS, 11 items): on narrow viewports, 6-column grid so all
+   tiles are equal-sized (row 1: 0-5, row 2: 6-10 + one ghost cell). */
+@media (max-width: 640px) {
+  .scale-items-wide {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    justify-content: initial;
+  }
+  .scale-items-wide .scale-item {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+  }
+}
 .scale-item input { display: none; }
 .scale-item .scale-num {
   display: block;
