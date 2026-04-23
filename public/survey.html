@@ -66,10 +66,11 @@ const UI = {
     fillField: 'Пожалуйста, заполните это поле',
     invalidPhone: 'Введите корректный номер телефона',
     fillRequired: 'Пожалуйста, ответьте на этот вопрос',
+    fillOther: 'Пожалуйста, укажите свой вариант',
     otherLabel: 'Другое',
     otherPlaceholder: 'свой вариант',
     inputPlaceholder: 'Введите ответ…',
-    selectPlaceholder: '— Выберите из списка',
+    selectPlaceholder: 'Выберите из списка…',
     thanks: 'Спасибо!',
     thanksBody: 'Ваша обратная связь помогает нам делать Verifix лучше. Мы внимательно прочитаем каждый ответ и вернёмся к Вам с итогами.',
   },
@@ -89,10 +90,11 @@ const UI = {
     fillField: 'Илтимос, ушбу майдонни тўлдиринг',
     invalidPhone: 'Тўғри телефон рақамини киритинг',
     fillRequired: 'Илтимос, ушбу саволга жавоб беринг',
+    fillOther: 'Илтимос, ўз вариантингизни кўрсатинг',
     otherLabel: 'Бошқа',
     otherPlaceholder: 'ўз вариантингиз',
     inputPlaceholder: 'Жавобни киритинг…',
-    selectPlaceholder: '— Рўйхатдан танланг',
+    selectPlaceholder: 'Рўйхатдан танланг…',
     thanks: 'Раҳмат!',
     thanksBody: 'Сизнинг фикр-мулоҳазаларингиз Verifix-ни янада яхшилашга ёрдам беради. Биз ҳар бир жавобни диққат билан ўқиб чиқамиз ва натижалар билан сизга қайтамиз.',
   },
@@ -112,10 +114,11 @@ const UI = {
     fillField: 'Iltimos, ushbu maydonni toʻldiring',
     invalidPhone: 'Toʻgʻri telefon raqamini kiriting',
     fillRequired: 'Iltimos, ushbu savolga javob bering',
+    fillOther: 'Iltimos, oʻz variantingizni koʻrsating',
     otherLabel: 'Boshqa',
     otherPlaceholder: 'oʻz variantingiz',
     inputPlaceholder: 'Javobni kiriting…',
-    selectPlaceholder: '— Roʻyxatdan tanlang',
+    selectPlaceholder: 'Roʻyxatdan tanlang…',
     thanks: 'Rahmat!',
     thanksBody: 'Sizning fikr-mulohazalaringiz Verifix-ni yanada yaxshilashga yordam beradi. Biz har bir javobni diqqat bilan oʻqib chiqamiz va natijalar bilan sizga qaytamiz.',
   },
@@ -233,6 +236,38 @@ function currentQuestion() {
   return list.find((q) => q.key === state.cursor) || null;
 }
 
+/** True if the current screen can advance — used to enable the Next button. */
+function isCurrentScreenValid() {
+  if (state.cursor === 'lang') return !!state.lang;
+  if (state.cursor === 'intro' || state.cursor === 'thanks') return true;
+  const q = currentQuestion();
+  if (!q) return false;
+  if (q.required) {
+    const val = answerFor(q.key);
+    const empty = val === undefined || val === null || val === '' ||
+                  (Array.isArray(val) && val.length === 0);
+    if (empty) return false;
+    if (q.key === 'phone' && !isPhoneValid(String(val))) return false;
+    if (q.type === 'long_text' && q.config && q.config.min_length) {
+      if (String(val).trim().length < q.config.min_length) return false;
+    }
+  }
+  // Checkbox + other: require ≥2 chars in custom text if marked
+  if (q.type === 'checkbox' && q.config && q.config.allow_other) {
+    const arr = Array.isArray(state.answers[q.key]) ? state.answers[q.key] : [];
+    const canonical = (q.config.options_ru || q.config.options || []);
+    const otherVal = arr.find((v) => !canonical.includes(v));
+    const minL = q.config.other_min_length || 2;
+    if (otherVal !== undefined && String(otherVal).trim().length < minL) return false;
+  }
+  return true;
+}
+// Expose so handlers can re-validate the Next button on every input
+function refreshNextBtn() {
+  const btn = document.getElementById('nextBtn');
+  if (btn) btn.disabled = !isCurrentScreenValid();
+}
+
 function goNext() {
   const ui = UI[state.lang] || UI.ru;
   if (state.cursor === 'lang') {
@@ -264,6 +299,16 @@ function goNext() {
       if (String(val).trim().length < q.config.min_length) {
         return showError(ui.fillRequired);
       }
+    }
+  }
+  // If checkbox has "Other" selected, require the custom text to be ≥2 chars
+  // (applies whether the question is required or not — only to the other option).
+  if (q.type === 'checkbox' && q.config && q.config.allow_other) {
+    const arr = Array.isArray(state.answers[q.key]) ? state.answers[q.key] : [];
+    const canonical = (q.config.options_ru || q.config.options || []);
+    const otherVal = arr.find((v) => !canonical.includes(v));
+    if (otherVal !== undefined && String(otherVal).trim().length < 2) {
+      return showError(ui.fillOther || ui.fillRequired);
     }
   }
 
@@ -345,7 +390,7 @@ function render(opts = {}) {
   nav.hidden = isThanks || isLang;
   const backBtn = document.getElementById('backBtn');
   const nextBtn = document.getElementById('nextBtn');
-  nextBtn.disabled = false;
+  nextBtn.disabled = !isCurrentScreenValid();
   backBtn.style.visibility = (state.cursor === 'intro' || isLang) ? 'hidden' : 'visible';
   backBtn.textContent = ui.back;
 
@@ -505,13 +550,15 @@ function renderQuestion(q) {
 
     if (otherActive) {
       // Focus mode: only "Другое" row + big textarea
+      const customPh = (q.config && q.config.other_placeholder)
+        ? t(q.config.other_placeholder) : ui.otherPlaceholder;
       body = `
         <div class="options options-big options-other-focus">
           <label class="opt opt-big opt-other-selected">
             <input type="checkbox" data-qkey-multi-other="${q.key}" checked />
             <span>${escapeHtml(ui.otherLabel)}</span>
           </label>
-          <textarea class="text-input big" data-qkey-other="${q.key}" maxlength="500" rows="3" placeholder="${escapeAttr(ui.otherPlaceholder)}" autofocus>${escapeHtml(otherValue)}</textarea>
+          <textarea class="text-input big" data-qkey-other="${q.key}" maxlength="500" rows="3" placeholder="${escapeAttr(customPh)}" autofocus>${escapeHtml(otherValue)}</textarea>
           <button type="button" class="btn-ghost opt-other-back" data-other-back="${q.key}">← Показать все варианты</button>
         </div>`;
     } else {
@@ -609,6 +656,7 @@ function renderSelect(q, currentVal, attrName) {
   const allowOther = q.config && q.config.allow_other;
   const isOther = currentVal && !canonical.includes(currentVal);
   const selectedCanonical = isOther ? '__other__' : (currentVal || '');
+  const hasValue = !!selectedCanonical;
   let options = `<option value="">${escapeHtml(ui.selectPlaceholder)}</option>`;
   localized.forEach((label, i) => {
     const cv = canonical[i];
@@ -618,7 +666,8 @@ function renderSelect(q, currentVal, attrName) {
   if (allowOther) {
     options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}…</option>`;
   }
-  let out = `<select class="text-input big select-input" ${attrName}="${q.key}">${options}</select>`;
+  const cls = `text-input big select-input${hasValue ? ' has-value' : ''}`;
+  let out = `<select class="${cls}" ${attrName}="${q.key}">${options}</select>`;
   if (allowOther) {
     const otherAttr = attrName === 'data-identity-select' ? 'data-identity-other' : 'data-qkey-other';
     out += `<input type="text" class="text-input big inline-other-under" ${otherAttr}="${q.key}" maxlength="200" value="${escapeAttr(isOther ? currentVal : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
@@ -654,7 +703,7 @@ function bindEvents() {
   document.querySelectorAll('[data-identity]').forEach((el) => {
     const k = el.dataset.identity;
     el.addEventListener('input', () => {
-      state.identity[k] = el.value; saveDraft();
+      state.identity[k] = el.value; saveDraft(); refreshNextBtn();
     });
     if (el.tagName === 'INPUT' && el.type !== 'radio') {
       el.addEventListener('keydown', (e) => {
@@ -667,7 +716,7 @@ function bindEvents() {
   document.querySelectorAll('[data-identity-phone]').forEach((el) => {
     el.addEventListener('input', () => {
       state.identity.phone = '+998 ' + el.value;
-      saveDraft();
+      saveDraft(); refreshNextBtn();
     });
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); goNext(); }
@@ -685,6 +734,8 @@ function bindEvents() {
         state.identity[k] = el.value;
       }
       saveDraft();
+      el.classList.toggle('has-value', !!el.value);
+      refreshNextBtn();
     });
   });
   document.querySelectorAll('[data-identity-other]').forEach((el) => {
@@ -715,6 +766,7 @@ function bindEvents() {
         const num = Number(el.value);
         state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
         saveDraft();
+        refreshNextBtn();
         if (dependentExists(key)) render({ scrollTo: false });
       });
     } else if (el.tagName === 'SELECT') {
@@ -728,10 +780,13 @@ function bindEvents() {
           state.answers[key] = el.value;
         }
         saveDraft();
+        el.classList.toggle('has-value', !!el.value);
+        refreshNextBtn();
+        if (dependentExists(key)) render({ scrollTo: false });
       });
     } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       el.addEventListener('input', () => {
-        state.answers[key] = el.value; saveDraft();
+        state.answers[key] = el.value; saveDraft(); refreshNextBtn();
       });
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && el.tagName === 'INPUT') { e.preventDefault(); goNext(); }
@@ -757,6 +812,7 @@ function bindEvents() {
         state.answers[key] = el.value;
       }
       saveDraft();
+      refreshNextBtn();
     });
   });
 
@@ -765,6 +821,7 @@ function bindEvents() {
       const key = el.dataset.qkeyMulti;
       rebuildMultiAnswer(key);
       saveDraft();
+      refreshNextBtn();
     });
   });
 
