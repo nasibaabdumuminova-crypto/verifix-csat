@@ -587,18 +587,19 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #c5bfd6;
-  gap: 12px;
-  line-height: 1.3;
+  margin-bottom: 14px;
+  font-size: clamp(16px, 1.8vw, 24px);
+  color: #d4cfef;
+  gap: 14px;
+  line-height: 1.35;
+  font-weight: 500;
 }
 .nps-anchor-left, .nps-anchor-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-.nps-emo { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.nps-emo { font-size: clamp(22px, 2.2vw, 30px); line-height: 1; flex-shrink: 0; }
 
 .nps-scale {
   display: grid;
@@ -723,8 +724,8 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   .nps-anchors { font-size: 10px; gap: 8px; }
 }
 @media (min-width: 640px) {
-  .nps-anchors { font-size: 13px; margin-bottom: 10px; }
-  .nps-emo { font-size: 18px; }
+  .nps-anchors { font-size: 22px; margin-bottom: 14px; }
+  .nps-emo { font-size: 28px; }
   .nps-scale { gap: 6px; }
   .nps-tile { font-size: 15px; border-radius: 8px; }
   /* Dramatic pop only on 11-point NPS */
@@ -738,7 +739,8 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   }
 }
 @media (min-width: 900px) {
-  .nps-anchors { font-size: 14px; margin-bottom: 12px; }
+  .nps-anchors { font-size: 24px; margin-bottom: 16px; }
+  .nps-emo { font-size: 30px; }
   .nps-tile { font-size: 16px; }
   .nps-scale:not(.nps-scale-5) .nps-tile.selected {
     transform: scale(1.32);

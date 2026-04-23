@@ -7,9 +7,9 @@
   const ctx = canvas.getContext('2d');
 
   let W, H, stars = [], mouse = { x: -9999, y: -9999 };
-  const STAR_COUNT = 120;
-  const ATTRACT_RADIUS = 260;
-  const ATTRACT_FORCE = 0.12;
+  const STAR_COUNT = 160;
+  const ATTRACT_RADIUS = 340;
+  const ATTRACT_FORCE = 0.18;
 
   function resize() {
     W = canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 1280;
@@ -22,12 +22,12 @@
       y: Math.random() * H,
       baseX: 0,
       baseY: 0,
-      r: Math.random() * 1.8 + 0.4,
-      alpha: Math.random() * 0.6 + 0.2,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.15,
+      r: Math.random() * 2.4 + 0.7,
+      alpha: Math.random() * 0.55 + 0.45,
+      vx: (Math.random() - 0.5) * 0.18,
+      vy: (Math.random() - 0.5) * 0.18,
       pulse: Math.random() * Math.PI * 2,
-      pulseSpeed: Math.random() * 0.02 + 0.005,
+      pulseSpeed: Math.random() * 0.025 + 0.008,
     };
   }
 
@@ -71,31 +71,33 @@
 
       // Pulse
       s.pulse += s.pulseSpeed;
-      const a = s.alpha + Math.sin(s.pulse) * 0.15;
+      const a = s.alpha + Math.sin(s.pulse) * 0.25;
 
-      // Glow near mouse
+      // Glow near mouse — stronger near cursor, proximity-based size lift
       let glow = 0;
       const md = Math.sqrt((mouse.x - s.x) ** 2 + (mouse.y - s.y) ** 2);
       if (md < ATTRACT_RADIUS) {
-        glow = (1 - md / ATTRACT_RADIUS) * 6;
+        const prox = 1 - md / ATTRACT_RADIUS; // 1 = on cursor, 0 = edge
+        glow = prox * 14;
       }
 
       ctx.save();
       if (glow > 0) {
-        ctx.shadowColor = 'rgba(180, 140, 255, 0.8)';
+        ctx.shadowColor = 'rgba(200, 170, 255, 0.95)';
         ctx.shadowBlur = glow;
       }
-      ctx.globalAlpha = Math.max(0, Math.min(1, a));
+      const glowBoost = glow > 0 ? Math.min(0.3, glow * 0.03) : 0;
+      ctx.globalAlpha = Math.max(0, Math.min(1, a + glowBoost));
       ctx.fillStyle = '#fff';
       ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r + (glow > 0 ? glow * 0.1 : 0), 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, s.r + (glow > 0 ? glow * 0.18 : 0), 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
     // Draw lines between nearby stars — bright near cursor, faint elsewhere
-    ctx.strokeStyle = '#b48cff';
-    const LINE_DIST = 150;
+    ctx.strokeStyle = '#c8a8ff';
+    const LINE_DIST = 180;
     for (let i = 0; i < stars.length; i++) {
       const a = stars[i];
       for (let j = i + 1; j < stars.length; j++) {
@@ -109,9 +111,9 @@
         const proximity = Math.max(0, 1 - dm / ATTRACT_RADIUS); // 1 = on cursor, 0 = far away
         const fadeDist = 1 - d / LINE_DIST;
 
-        // Far from cursor: very faint (0.03). Near cursor: bright (up to 0.6)
-        const alpha = fadeDist * (0.03 + proximity * 0.57);
-        const width = 0.4 + proximity * 1.6;
+        // Ambient bright baseline + strong boost near cursor
+        const alpha = fadeDist * (0.07 + proximity * 0.75);
+        const width = 0.6 + proximity * 2.0;
 
         ctx.globalAlpha = alpha;
         ctx.lineWidth = width;
