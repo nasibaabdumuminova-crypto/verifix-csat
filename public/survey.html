@@ -595,7 +595,8 @@ function renderQuestion(q) {
       if (isNps) return i <= 6 ? 'nps-det' : (i <= 8 ? 'nps-neu' : 'nps-pro');
       return i <= 2 ? 'nps-det' : (i === 3 ? 'nps-neu' : 'nps-pro');
     };
-    const ZONE_TEXT_COLOR = { 'nps-det': '#501313', 'nps-neu': '#633806', 'nps-pro': '#173404' };
+    // Bright confirm-value colours that pass WCAG AA on dark violet bg
+    const ZONE_TEXT_COLOR = { 'nps-det': '#E24B4A', 'nps-neu': '#EF9F27', 'nps-pro': '#97C459' };
 
     const zoneLabel = (i) => {
       const z = zoneClass(i);
