@@ -152,11 +152,34 @@ async function initDb() {
     console.log(`Seeded ${SEED_QUESTIONS.length} survey questions (v9 trilingual)`);
   }
 
-  // Idempotent post-seed migration: seed is the source of truth for built-in
-  // questions' content. Sync type/config/help_text/title/step_title/step_help/
-  // show_if from seed on every boot. If content in DB differs (e.g. admin edited
-  // one of the default questions), seed wins — use soft-delete + recreate via
-  // the admin UI for truly custom questions.
+  // Idempotent post-seed sync: seed is the source of truth for built-in
+  // questions. On every boot we (1) INSERT new seed keys that aren't in DB,
+  // (2) UPDATE existing rows where any seed field drifted, (3) soft-delete
+  // any previously-seeded rows whose key was removed from seed (e.g.
+  // nps_like / nps_improve removed in favor of nps_range_* segments).
+  //
+  // 1) INSERT missing seed questions.
+  let inserted = 0;
+  for (const q of SEED_QUESTIONS) {
+    const r = await pool.query(
+      `INSERT INTO survey_questions (key, step_number, step_title, step_help, position, title, help_text, type, required, config, show_if)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (key) DO NOTHING RETURNING id`,
+      [
+        q.key, q.step_number,
+        JSON.stringify(q.step_title), q.step_help ? JSON.stringify(q.step_help) : null,
+        q.position,
+        JSON.stringify(q.title), q.help_text ? JSON.stringify(q.help_text) : null,
+        q.type, !!q.required,
+        q.config ? JSON.stringify(q.config) : null,
+        q.show_if ? JSON.stringify(q.show_if) : null,
+      ]
+    );
+    inserted += r.rowCount;
+  }
+  if (inserted) console.log(`Post-seed sync: inserted ${inserted} new question(s) from seed`);
+
+  // 2) UPDATE drifted rows.
   let migrated = 0;
   for (const q of SEED_QUESTIONS) {
     const r = await pool.query(
@@ -201,6 +224,28 @@ async function initDb() {
     migrated += r.rowCount;
   }
   if (migrated) console.log(`Post-seed sync: updated ${migrated} question(s) from seed`);
+
+  // 3) Soft-delete keys that the seed no longer contains. We keep rows so that
+  // historical answers referencing them stay readable. Admin-created custom
+  // questions never get deleted because they're never seeded — this tracks
+  // a known set of keys via a sentinel prefix table.
+  //
+  // Safe heuristic: only auto-retire keys that were once in a seed (we can't
+  // know this without a registry, so we limit removals to the explicit list
+  // of retired keys below).
+  const RETIRED_KEYS = ['nps_like', 'nps_improve'];
+  if (RETIRED_KEYS.length) {
+    const r = await pool.query(
+      `UPDATE survey_questions
+         SET deleted_at = NOW()
+       WHERE key = ANY($1::text[])
+         AND deleted_at IS NULL
+       RETURNING key`,
+      [RETIRED_KEYS]
+    );
+    if (r.rowCount) console.log(`Post-seed sync: soft-deleted retired keys: ${r.rows.map(x=>x.key).join(', ')}`);
+  }
+
   console.log('DB ready');
 }
 
