@@ -530,27 +530,52 @@ function renderQuestion(q) {
     const low = c.low_label ? t(c.low_label) : '';
     const high = c.high_label ? t(c.high_label) : '';
     const count = max - min + 1;
-    // Mark "wide" scales (e.g. NPS 0–10 = 11 items) so CSS can lay them
-    // out in an even 6-col grid on mobile instead of ragged flex-wrap.
-    const wideClass = count > 7 ? ' scale-items-wide' : '';
-    let items = '';
-    for (let i = min; i <= max; i++) {
-      const checked = String(val) === String(i) ? 'checked' : '';
-      items += `
-        <label class="scale-item scale-item-big">
-          <input type="radio" name="${q.key}" value="${i}" data-qkey="${q.key}" ${checked} />
-          <span class="scale-num">${i}</span>
-        </label>`;
+
+    // NPS-style scale: colour-zoned 0-10 with emoji anchors above.
+    const isNps = q.key === 'nps' || (min === 0 && max === 10 && count === 11);
+
+    if (isNps) {
+      const zoneClass = (i) => i <= 6 ? 'nps-det' : (i <= 8 ? 'nps-neu' : 'nps-pro');
+      const zoneLabel = (i) => {
+        if (i <= 6) return { ru: 'детрактор', uz_cyr: 'детрактор', uz_lat: 'detraktor' }[state.lang] || 'детрактор';
+        if (i <= 8) return { ru: 'нейтрал',   uz_cyr: 'нейтрал',   uz_lat: 'neytral'   }[state.lang] || 'нейтрал';
+        return                { ru: 'промоутер', uz_cyr: 'промоутер', uz_lat: 'promouter' }[state.lang] || 'промоутер';
+      };
+      let tiles = '';
+      for (let i = 0; i <= 10; i++) {
+        const checked = String(val) === String(i);
+        tiles += `<button type="button" class="nps-tile ${zoneClass(i)}${checked ? ' selected' : ''}" data-nps-key="${q.key}" data-nps-val="${i}" role="radio" aria-checked="${checked}" aria-label="${i} — ${zoneLabel(i)}" tabindex="${checked || (val === undefined && i === 0) ? '0' : '-1'}">${i}</button>`;
+      }
+      body = `
+        <div class="nps-scale-wrap">
+          <div class="nps-anchors" aria-hidden="true">
+            <div class="nps-anchor-left"><span class="nps-emo">😕</span><span>${escapeHtml(low)}</span></div>
+            <div class="nps-anchor-right"><span>${escapeHtml(high)}</span><span class="nps-emo">😍</span></div>
+          </div>
+          <div class="nps-scale" role="radiogroup" aria-label="${escapeAttr(t(q.title))}" data-nps-key="${q.key}">
+            ${tiles}
+          </div>
+        </div>`;
+    } else {
+      // Legacy scale variant (1-5 CSAT-like)
+      let items = '';
+      for (let i = min; i <= max; i++) {
+        const checked = String(val) === String(i) ? 'checked' : '';
+        items += `
+          <label class="scale-item scale-item-big">
+            <input type="radio" name="${q.key}" value="${i}" data-qkey="${q.key}" ${checked} />
+            <span class="scale-num">${i}</span>
+          </label>`;
+      }
+      body = `
+        <div class="scale scale-big">
+          <div class="scale-items" data-count="${count}">${items}</div>
+          <div class="scale-labels">
+            <span>${escapeHtml(low)}</span>
+            <span>${escapeHtml(high)}</span>
+          </div>
+        </div>`;
     }
-    const labelsClass = wideClass ? ' scale-labels-wide' : '';
-    body = `
-      <div class="scale scale-big">
-        <div class="scale-items${wideClass}" data-count="${count}">${items}</div>
-        <div class="scale-labels${labelsClass}">
-          <span>${escapeHtml(low)}</span>
-          <span>${escapeHtml(high)}</span>
-        </div>
-      </div>`;
   }
 
   return `
@@ -764,6 +789,43 @@ function bindEvents() {
       }
       saveDraft();
       render({ scrollTo: false });
+    });
+  });
+
+  // NPS tiles: click + keyboard navigation + haptic
+  document.querySelectorAll('.nps-tile').forEach((btn) => {
+    const key = btn.dataset.npsKey;
+    const val = Number(btn.dataset.npsVal);
+    btn.addEventListener('click', () => {
+      state.answers[key] = val;
+      // Update selection visuals without a full re-render to avoid scroll jump
+      document.querySelectorAll(`.nps-tile[data-nps-key="${key}"]`).forEach((t) => {
+        const v = Number(t.dataset.npsVal);
+        const sel = v === val;
+        t.classList.toggle('selected', sel);
+        t.setAttribute('aria-checked', sel ? 'true' : 'false');
+        t.setAttribute('tabindex', sel ? '0' : '-1');
+      });
+      saveDraft();
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
+      if (dependentExists(key)) render({ scrollTo: false });
+    });
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        btn.click();
+        return;
+      }
+      let next = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = val + 1;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = val - 1;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End')  next = 10;
+      if (next !== null && next >= 0 && next <= 10) {
+        e.preventDefault();
+        const target = document.querySelector(`.nps-tile[data-nps-key="${key}"][data-nps-val="${next}"]`);
+        if (target) target.focus();
+      }
     });
   });
 

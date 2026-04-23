@@ -530,36 +530,82 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   cursor: pointer;
 }
 
-/* Wide scales (NPS, 11 items): on narrow viewports, 6-column grid so all
-   tiles are equal-sized (row 1: 0-5, row 2: 6-10 + one ghost cell). */
-@media (max-width: 640px) {
-  .scale-items-wide {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-    justify-content: initial;
-  }
-  .scale-items-wide .scale-item {
-    flex: none;
-    min-width: 0;
-    width: 100%;
-  }
-  /* Labels: align 'low' under column 1 (where "0" sits) and 'high' under
-     column 5 (where "10" sits in row 2), not the grid's right edge. */
-  .scale-labels-wide {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-    justify-content: initial;
-  }
-  .scale-labels-wide span:first-child {
-    grid-column: 1 / 2;
-    text-align: center;
-  }
-  .scale-labels-wide span:last-child {
-    grid-column: 5 / 6;
-    text-align: center;
-  }
+/* ================================================================== */
+/* ========== NPS scale (0–10, single row, colour-zoned)    ========== */
+/* ================================================================== */
+.nps-scale-wrap { margin-top: 4px; }
+
+.nps-anchors {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--c-muted);
+  gap: 12px;
+  line-height: 1.3;
+}
+.nps-anchor-left, .nps-anchor-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nps-emo { font-size: 16px; line-height: 1; flex-shrink: 0; }
+
+.nps-scale {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+}
+
+.nps-tile {
+  all: unset;
+  box-sizing: border-box;
+  aspect-ratio: 1 / 1;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s, transform 0.1s;
+  user-select: none;
+}
+.nps-tile:hover { filter: brightness(0.92); }
+.nps-tile:active { transform: scale(0.96); }
+.nps-tile.selected {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+}
+.nps-tile:focus-visible {
+  outline: 2px solid var(--c-violet);
+  outline-offset: 2px;
+}
+
+.nps-det { background: #F7C1C1; border-color: #E24B4A; color: #501313; }
+.nps-neu { background: #FAC775; border-color: #BA7517; color: #633806; }
+.nps-pro { background: #C0DD97; border-color: #639922; color: #173404; }
+
+@media (max-width: 360px) {
+  .nps-scale { gap: 3px; }
+  .nps-tile { font-size: 12px; }
+  .nps-anchors { font-size: 10px; gap: 8px; }
+}
+@media (min-width: 640px) {
+  .nps-anchors { font-size: 13px; margin-bottom: 10px; }
+  .nps-emo { font-size: 18px; }
+  .nps-scale { gap: 6px; }
+  .nps-tile { font-size: 15px; border-radius: 8px; }
+}
+@media (min-width: 900px) {
+  .nps-anchors { font-size: 14px; margin-bottom: 12px; }
+  .nps-tile { font-size: 16px; }
 }
 .scale-item input { display: none; }
 .scale-item .scale-num {
