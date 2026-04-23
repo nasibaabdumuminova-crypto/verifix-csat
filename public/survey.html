@@ -256,7 +256,7 @@ function goNext() {
     const empty = val === undefined || val === null || val === '' ||
                   (Array.isArray(val) && val.length === 0);
     if (empty) return showError(ui.fillRequired);
-    if (q.key === 'phone' && !/^[\+\-\d\s()]{5,}$/.test(String(val))) {
+    if (q.key === 'phone' && !isPhoneValid(String(val))) {
       return showError(ui.invalidPhone);
     }
   }
@@ -425,8 +425,13 @@ function renderQuestion(q) {
     body = renderSelect(q, state.identity[q.key] || '', 'data-identity-select');
   } else if (isIdentity) {
     const inputType = q.key === 'phone' ? 'tel' : 'text';
+    // Phone: pre-fill +998 prefix if empty
+    if (q.key === 'phone' && !state.identity.phone) {
+      state.identity.phone = (q.config && q.config.prefix) || '+998 ';
+    }
     const v = escapeAttr(state.identity[q.key] || '');
-    body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
+    const ph = (q.key === 'phone' && q.config && q.config.placeholder) || ui.inputPlaceholder;
+    body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="30" value="${v}" placeholder="${escapeAttr(ph)}" autofocus />`;
   } else if (q.type === 'short_text') {
     body = `<input type="text" class="text-input big" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
   } else if (q.type === 'long_text') {
@@ -457,6 +462,10 @@ function renderQuestion(q) {
   } else if (q.type === 'checkbox') {
     const { localized, canonical } = optionsOf(q);
     const arr = Array.isArray(val) ? val : [];
+    const allowOther = q.config && q.config.allow_other;
+    // "Other" value is any array entry that isn't one of the canonical options
+    const otherValue = allowOther ? (arr.find((v) => !canonical.includes(v)) || '') : '';
+    const otherChecked = !!otherValue;
     body = '<div class="options options-big">' + localized.map((label, i) => {
       const cv = canonical[i];
       const checked = arr.includes(cv) ? 'checked' : '';
@@ -465,12 +474,25 @@ function renderQuestion(q) {
           <input type="checkbox" value="${escapeAttr(cv)}" data-qkey-multi="${q.key}" ${checked} />
           <span>${escapeHtml(label)}</span>
         </label>`;
-    }).join('') + '</div>';
+    }).join('');
+    if (allowOther) {
+      body += `
+        <label class="opt opt-big">
+          <input type="checkbox" data-qkey-multi-other="${q.key}" ${otherChecked ? 'checked' : ''} />
+          <span>${escapeHtml(ui.otherLabel)}:</span>
+          <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(otherValue)}" placeholder="${escapeAttr(ui.otherPlaceholder)}" />
+        </label>`;
+    }
+    body += '</div>';
   } else if (q.type === 'scale') {
     const c = q.config || {};
     const min = c.min ?? 1, max = c.max ?? 5;
     const low = c.low_label ? t(c.low_label) : '';
     const high = c.high_label ? t(c.high_label) : '';
+    const count = max - min + 1;
+    // Mark "wide" scales (e.g. NPS 0–10 = 11 items) so CSS can lay them
+    // out in an even 6-col grid on mobile instead of ragged flex-wrap.
+    const wideClass = count > 7 ? ' scale-items-wide' : '';
     let items = '';
     for (let i = min; i <= max; i++) {
       const checked = String(val) === String(i) ? 'checked' : '';
@@ -482,7 +504,7 @@ function renderQuestion(q) {
     }
     body = `
       <div class="scale scale-big">
-        <div class="scale-items">${items}</div>
+        <div class="scale-items${wideClass}" data-count="${count}">${items}</div>
         <div class="scale-labels">
           <span>${escapeHtml(low)}</span>
           <span>${escapeHtml(high)}</span>
@@ -623,10 +645,21 @@ function bindEvents() {
   document.querySelectorAll('[data-qkey-other]').forEach((el) => {
     const key = el.dataset.qkeyOther;
     el.addEventListener('input', () => {
+      // Radio case
       const radio = document.querySelector(`input[name="${key}"][value="__other__"]`);
       if (radio) radio.checked = true;
+      // Select case
       const sel = document.querySelector(`select[data-qkey="${key}"]`);
       if (sel) sel.value = '__other__';
+      // Checkbox case: toggle the "other" checkbox on if user types something,
+      // update the array in place
+      const otherCb = document.querySelector(`[data-qkey-multi-other="${key}"]`);
+      if (otherCb) {
+        otherCb.checked = el.value.trim().length > 0;
+        rebuildMultiAnswer(key);
+        saveDraft();
+        return;
+      }
       state.answers[key] = el.value; saveDraft();
     });
   });
@@ -634,14 +667,33 @@ function bindEvents() {
   document.querySelectorAll('[data-qkey-multi]').forEach((el) => {
     el.addEventListener('change', () => {
       const key = el.dataset.qkeyMulti;
-      const boxes = document.querySelectorAll(`[data-qkey-multi="${key}"]`);
-      state.answers[key] = Array.from(boxes).filter((b) => b.checked).map((b) => b.value);
+      rebuildMultiAnswer(key);
+      saveDraft();
+    });
+  });
+
+  document.querySelectorAll('[data-qkey-multi-other]').forEach((el) => {
+    const key = el.dataset.qkeyMultiOther;
+    el.addEventListener('change', () => {
+      rebuildMultiAnswer(key);
       saveDraft();
     });
   });
 
   document.getElementById('backBtn').onclick = goBack;
   document.getElementById('nextBtn').onclick = goNext;
+}
+
+/* Assemble checkbox answer: canonical option values that are checked + custom "other" text */
+function rebuildMultiAnswer(key) {
+  const boxes = document.querySelectorAll(`[data-qkey-multi="${key}"]`);
+  const checkedOpts = Array.from(boxes).filter((b) => b.checked).map((b) => b.value);
+  const otherCb = document.querySelector(`[data-qkey-multi-other="${key}"]`);
+  const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
+  if (otherCb && otherCb.checked && otherInput && otherInput.value.trim()) {
+    checkedOpts.push(otherInput.value.trim());
+  }
+  state.answers[key] = checkedOpts;
 }
 
 // ============ SUBMIT ============
@@ -653,7 +705,7 @@ async function submit() {
 
   // Also validate identity before submit (in case user navigated by clicking back through them)
   if (!state.identity.company_name?.trim() || !state.identity.contact_name?.trim() ||
-      !/^[\+\-\d\s()]{5,}$/.test(state.identity.phone || '')) {
+      !isPhoneValid(state.identity.phone || '')) {
     btn.disabled = false;
     btn.textContent = ui.submit;
     return showError(ui.fillRequired);
@@ -690,6 +742,10 @@ async function submit() {
 }
 
 // ============ HELPERS ============
+function isPhoneValid(p) {
+  const digits = (p || '').replace(/\D/g, '');
+  return digits.startsWith('998') && digits.length >= 12;
+}
 function showError(msg) {
   const el = document.getElementById('message');
   el.textContent = msg;

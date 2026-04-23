@@ -44,6 +44,12 @@ function tr(x, lang) {
   return x[lang] || x[DEFAULT_LANG] || x.ru || Object.values(x)[0] || '';
 }
 
+// Phone validator: must contain +998 and at least 9 additional digits (12 total)
+function isPhoneValid(p) {
+  const digits = (p || '').replace(/\D/g, '');
+  return digits.startsWith('998') && digits.length >= 12;
+}
+
 // ========================================================================
 // DB INIT + MIGRATION
 // ========================================================================
@@ -146,29 +152,55 @@ async function initDb() {
     console.log(`Seeded ${SEED_QUESTIONS.length} survey questions (v9 trilingual)`);
   }
 
-  // Idempotent post-seed migration: if a seeded question's type changed between
-  // versions (e.g. position: short_text → select), update the existing row so
-  // prod reflects the latest seed without requiring a manual DB reset.
-  // Only updates rows where the stored type differs from the seed type.
+  // Idempotent post-seed migration: seed is the source of truth for built-in
+  // questions' content. Sync type/config/help_text/title/step_title/step_help/
+  // show_if from seed on every boot. If content in DB differs (e.g. admin edited
+  // one of the default questions), seed wins — use soft-delete + recreate via
+  // the admin UI for truly custom questions.
   let migrated = 0;
   for (const q of SEED_QUESTIONS) {
     const r = await pool.query(
       `UPDATE survey_questions
          SET type = $1,
              config = $2::jsonb,
-             help_text = $3::jsonb
-       WHERE key = $4 AND type <> $1 AND deleted_at IS NULL
+             help_text = $3::jsonb,
+             title = $4::jsonb,
+             step_title = $5::jsonb,
+             step_help = $6::jsonb,
+             show_if = $7::jsonb,
+             required = $8,
+             position = $9,
+             step_number = $10
+       WHERE key = $11 AND deleted_at IS NULL AND (
+         type <> $1 OR
+         config IS DISTINCT FROM $2::jsonb OR
+         help_text IS DISTINCT FROM $3::jsonb OR
+         title IS DISTINCT FROM $4::jsonb OR
+         step_title IS DISTINCT FROM $5::jsonb OR
+         step_help IS DISTINCT FROM $6::jsonb OR
+         show_if IS DISTINCT FROM $7::jsonb OR
+         required IS DISTINCT FROM $8 OR
+         position IS DISTINCT FROM $9 OR
+         step_number IS DISTINCT FROM $10
+       )
        RETURNING id`,
       [
         q.type,
         q.config ? JSON.stringify(q.config) : null,
         q.help_text ? JSON.stringify(q.help_text) : null,
+        JSON.stringify(q.title),
+        JSON.stringify(q.step_title),
+        q.step_help ? JSON.stringify(q.step_help) : null,
+        q.show_if ? JSON.stringify(q.show_if) : null,
+        !!q.required,
+        q.position,
+        q.step_number,
         q.key,
       ]
     );
     migrated += r.rowCount;
   }
-  if (migrated) console.log(`Post-seed type migration: updated ${migrated} question(s)`);
+  if (migrated) console.log(`Post-seed sync: updated ${migrated} question(s) from seed`);
   console.log('DB ready');
 }
 
@@ -521,8 +553,8 @@ app.post('/api/survey/responses', async (req, res) => {
     if (!contact_name || !String(contact_name).trim()) {
       return res.status(400).json({ error: 'Укажите ФИО' });
     }
-    if (!phone || !/^[\+\-\d\s()]{5,}$/.test(String(phone))) {
-      return res.status(400).json({ error: 'Укажите корректный номер телефона' });
+    if (!phone || !isPhoneValid(String(phone))) {
+      return res.status(400).json({ error: 'Укажите корректный номер телефона (+998 и минимум 9 цифр)' });
     }
     if (!Array.isArray(answers)) {
       return res.status(400).json({ error: 'Некорректный формат ответов' });

@@ -160,7 +160,10 @@ def compute_stats():
 
 
 # ========== HTTP handler ==========
-PHONE_RE = re.compile(r"^[\+\-\d\s()]{5,}$")
+def is_phone_valid(p):
+    """+998 + at least 9 more digits (12 total)."""
+    digits = re.sub(r"\D", "", p or "")
+    return digits.startswith("998") and len(digits) >= 12
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -305,8 +308,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json(400, {"error": "Укажите название компании"})
             if not contact:
                 return self._send_json(400, {"error": "Укажите ФИО"})
-            if not PHONE_RE.match(phone):
-                return self._send_json(400, {"error": "Укажите корректный номер телефона"})
+            if not is_phone_valid(phone):
+                return self._send_json(400, {"error": "Укажите корректный номер телефона (+998 и минимум 9 цифр)"})
             if not isinstance(answers_in, list):
                 return self._send_json(400, {"error": "Некорректный формат ответов"})
 
