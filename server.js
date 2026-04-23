@@ -774,9 +774,17 @@ app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
 // ========================================================================
 // PAGES
 // ========================================================================
-app.get('/survey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'survey.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/admin/survey', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-survey.html')));
+// HTML pages: disable browser caching so layout/UX updates reach users
+// immediately on next visit — avoids stale cache after a redeploy.
+function sendHtmlNoCache(res, filename) {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(__dirname, 'public', filename));
+}
+app.get('/survey',       (req, res) => sendHtmlNoCache(res, 'survey.html'));
+app.get('/admin',        (req, res) => sendHtmlNoCache(res, 'admin.html'));
+app.get('/admin/survey', (req, res) => sendHtmlNoCache(res, 'admin-survey.html'));
 
 app.get('/healthz', (req, res) => res.send('ok'));
 
