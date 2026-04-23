@@ -542,10 +542,11 @@ function renderQuestion(q) {
           <span class="scale-num">${i}</span>
         </label>`;
     }
+    const labelsClass = wideClass ? ' scale-labels-wide' : '';
     body = `
       <div class="scale scale-big">
         <div class="scale-items${wideClass}" data-count="${count}">${items}</div>
-        <div class="scale-labels">
+        <div class="scale-labels${labelsClass}">
           <span>${escapeHtml(low)}</span>
           <span>${escapeHtml(high)}</span>
         </div>
