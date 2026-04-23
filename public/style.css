@@ -1118,9 +1118,9 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 
 .step-help {
   color: var(--c-muted);
-  font-size: clamp(16px, 1.9vw, 30px);
-  margin: 0 0 clamp(18px, 2vw, 28px);
-  line-height: 1.45;
+  font-size: clamp(15px, 1.5vw, 22px);
+  margin: 0 0 clamp(16px, 2vw, 26px);
+  line-height: 1.5;
   padding: clamp(12px, 1.4vw, 18px) clamp(14px, 1.6vw, 22px);
   border-left: 3px solid var(--c-violet);
   background: rgba(138,84,242,0.08);
@@ -1234,14 +1234,14 @@ textarea.text-input.big { min-height: 140px; }
     margin: 0 0 16px;
   }
 
-  /* Step help block (покрытый плашкой) */
+  /* Step help block (покрытый плашкой) — matches q-help-big size */
   .page-survey-single .step-help {
-    font-size: 24px;
+    font-size: 22px;
     line-height: 1.5;
-    padding: 20px 24px;
-    max-width: 780px;
-    color: rgba(255, 255, 255, 0.96);
-    margin: 0 0 28px;
+    padding: 18px 22px;
+    max-width: 760px;
+    color: rgba(255, 255, 255, 0.94);
+    margin: 0 0 26px;
   }
 
   /* The main question title */
