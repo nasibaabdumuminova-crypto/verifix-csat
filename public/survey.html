@@ -409,6 +409,7 @@ function renderQuestion(q) {
   const displayCode = q.step_number + '.' + (positionInStep(q, list) + 1);
 
   const val = answerFor(q.key);
+  const title = escapeHtml(t(q.title));
   const required = q.required ? '<span class="req">*</span>' : '';
   const helpText = q.help_text ? `<p class="q-help-big">${escapeHtml(t(q.help_text))}</p>` : '';
   const stepHelp = q.position === positionInStep(q, list) + 1 || idx === 0 || list[idx - 1].step_number !== q.step_number;
@@ -423,15 +424,27 @@ function renderQuestion(q) {
   const isIdentity = IDENTITY_KEYS.has(q.key);
   if (isIdentity && q.type === 'select') {
     body = renderSelect(q, state.identity[q.key] || '', 'data-identity-select');
+  } else if (isIdentity && q.key === 'phone') {
+    // Phone is split into a locked '+998' prefix + digit input so the user
+    // can never delete the country code.
+    let stored = state.identity.phone || '';
+    if (!stored) { stored = '+998 '; state.identity.phone = stored; }
+    const digitsPart = stored.replace(/^\+998\s*/, '');
+    body = `
+      <div class="phone-group">
+        <span class="phone-prefix">+998</span>
+        <input type="tel" class="text-input big phone-suffix" data-identity-phone maxlength="24" value="${escapeAttr(digitsPart)}" placeholder="90 123 45 67" autofocus />
+      </div>`;
+    return `
+      <div class="q-block" data-q-key="${q.key}">
+        <div class="q-title">${displayCode}. ${title} ${required}</div>
+        ${helpText}
+        ${body}
+      </div>`;
   } else if (isIdentity) {
-    const inputType = q.key === 'phone' ? 'tel' : 'text';
-    // Phone: pre-fill +998 prefix if empty
-    if (q.key === 'phone' && !state.identity.phone) {
-      state.identity.phone = (q.config && q.config.prefix) || '+998 ';
-    }
+    const inputType = 'text';
     const v = escapeAttr(state.identity[q.key] || '');
-    const ph = (q.key === 'phone' && q.config && q.config.placeholder) || ui.inputPlaceholder;
-    body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="30" value="${v}" placeholder="${escapeAttr(ph)}" autofocus />`;
+    body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
   } else if (q.type === 'short_text') {
     body = `<input type="text" class="text-input big" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
   } else if (q.type === 'long_text') {
@@ -440,50 +453,77 @@ function renderQuestion(q) {
     body = renderSelect(q, val || '', 'data-qkey');
   } else if (q.type === 'radio') {
     const { localized, canonical } = optionsOf(q);
-    body = '<div class="options options-big">' + localized.map((label, i) => {
-      const cv = canonical[i];
-      const checked = val === cv ? 'checked' : '';
-      return `
-        <label class="opt opt-big">
-          <input type="radio" name="${q.key}" value="${escapeAttr(cv)}" data-qkey="${q.key}" ${checked} />
-          <span>${escapeHtml(label)}</span>
-        </label>`;
-    }).join('');
-    if (q.config && q.config.allow_other) {
-      const isOther = val && !canonical.includes(val);
-      body += `
-        <label class="opt opt-big">
-          <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" ${isOther ? 'checked' : ''} />
-          <span>${escapeHtml(ui.otherLabel)}:</span>
-          <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(isOther ? val : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" />
-        </label>`;
+    const allowOther = q.config && q.config.allow_other;
+    const isOther = allowOther && val && !canonical.includes(val) && val !== '';
+
+    if (isOther) {
+      // Focus mode: hide other options, show only "Другое" + big textarea
+      body = `
+        <div class="options options-big options-other-focus">
+          <label class="opt opt-big opt-other-selected">
+            <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" checked />
+            <span>${escapeHtml(ui.otherLabel)}</span>
+          </label>
+          <textarea class="text-input big" data-qkey-other="${q.key}" maxlength="500" rows="3" placeholder="${escapeAttr(ui.otherPlaceholder)}" autofocus>${escapeHtml(val)}</textarea>
+          <button type="button" class="btn-ghost opt-other-back" data-other-back="${q.key}">← Показать все варианты</button>
+        </div>`;
+    } else {
+      body = '<div class="options options-big">' + localized.map((label, i) => {
+        const cv = canonical[i];
+        const checked = val === cv ? 'checked' : '';
+        return `
+          <label class="opt opt-big">
+            <input type="radio" name="${q.key}" value="${escapeAttr(cv)}" data-qkey="${q.key}" ${checked} />
+            <span>${escapeHtml(label)}</span>
+          </label>`;
+      }).join('');
+      if (allowOther) {
+        body += `
+          <label class="opt opt-big">
+            <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" />
+            <span>${escapeHtml(ui.otherLabel)}…</span>
+          </label>`;
+      }
+      body += '</div>';
     }
-    body += '</div>';
   } else if (q.type === 'checkbox') {
     const { localized, canonical } = optionsOf(q);
     const arr = Array.isArray(val) ? val : [];
     const allowOther = q.config && q.config.allow_other;
     // "Other" value is any array entry that isn't one of the canonical options
     const otherValue = allowOther ? (arr.find((v) => !canonical.includes(v)) || '') : '';
-    const otherChecked = !!otherValue;
-    body = '<div class="options options-big">' + localized.map((label, i) => {
-      const cv = canonical[i];
-      const checked = arr.includes(cv) ? 'checked' : '';
-      return `
-        <label class="opt opt-big">
-          <input type="checkbox" value="${escapeAttr(cv)}" data-qkey-multi="${q.key}" ${checked} />
-          <span>${escapeHtml(label)}</span>
-        </label>`;
-    }).join('');
-    if (allowOther) {
-      body += `
-        <label class="opt opt-big">
-          <input type="checkbox" data-qkey-multi-other="${q.key}" ${otherChecked ? 'checked' : ''} />
-          <span>${escapeHtml(ui.otherLabel)}:</span>
-          <input type="text" class="text-input inline-other" data-qkey-other="${q.key}" maxlength="200" value="${escapeAttr(otherValue)}" placeholder="${escapeAttr(ui.otherPlaceholder)}" />
-        </label>`;
+    const otherActive = !!otherValue;
+
+    if (otherActive) {
+      // Focus mode: only "Другое" row + big textarea
+      body = `
+        <div class="options options-big options-other-focus">
+          <label class="opt opt-big opt-other-selected">
+            <input type="checkbox" data-qkey-multi-other="${q.key}" checked />
+            <span>${escapeHtml(ui.otherLabel)}</span>
+          </label>
+          <textarea class="text-input big" data-qkey-other="${q.key}" maxlength="500" rows="3" placeholder="${escapeAttr(ui.otherPlaceholder)}" autofocus>${escapeHtml(otherValue)}</textarea>
+          <button type="button" class="btn-ghost opt-other-back" data-other-back="${q.key}">← Показать все варианты</button>
+        </div>`;
+    } else {
+      body = '<div class="options options-big">' + localized.map((label, i) => {
+        const cv = canonical[i];
+        const checked = arr.includes(cv) ? 'checked' : '';
+        return `
+          <label class="opt opt-big">
+            <input type="checkbox" value="${escapeAttr(cv)}" data-qkey-multi="${q.key}" ${checked} />
+            <span>${escapeHtml(label)}</span>
+          </label>`;
+      }).join('');
+      if (allowOther) {
+        body += `
+          <label class="opt opt-big">
+            <input type="checkbox" data-qkey-multi-other="${q.key}" />
+            <span>${escapeHtml(ui.otherLabel)}…</span>
+          </label>`;
+      }
+      body += '</div>';
     }
-    body += '</div>';
   } else if (q.type === 'scale') {
     const c = q.config || {};
     const min = c.min ?? 1, max = c.max ?? 5;
@@ -582,6 +622,17 @@ function bindEvents() {
       });
     }
   });
+
+  // Phone suffix (after locked +998 prefix)
+  document.querySelectorAll('[data-identity-phone]').forEach((el) => {
+    el.addEventListener('input', () => {
+      state.identity.phone = '+998 ' + el.value;
+      saveDraft();
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); goNext(); }
+    });
+  });
   document.querySelectorAll('[data-identity-select]').forEach((el) => {
     const k = el.dataset.identitySelect;
     el.addEventListener('change', () => {
@@ -612,13 +663,19 @@ function bindEvents() {
       el.addEventListener('change', () => {
         if (!el.checked) return;
         if (el.value === '__other__') {
+          // Switch into "other focus" mode — hide other options, show textarea.
+          // Use whitespace as sentinel marker so isOther detection triggers.
           const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
-          state.answers[key] = otherInput ? otherInput.value : '';
-        } else {
-          const num = Number(el.value);
-          state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
+          const existing = otherInput ? otherInput.value : '';
+          state.answers[key] = existing || ' ';
+          saveDraft();
+          render({ scrollTo: false });
+          return;
         }
+        const num = Number(el.value);
+        state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
         saveDraft();
+        if (dependentExists(key)) render({ scrollTo: false });
       });
     } else if (el.tagName === 'SELECT') {
       el.addEventListener('change', () => {
@@ -645,22 +702,21 @@ function bindEvents() {
   document.querySelectorAll('[data-qkey-other]').forEach((el) => {
     const key = el.dataset.qkeyOther;
     el.addEventListener('input', () => {
-      // Radio case
-      const radio = document.querySelector(`input[name="${key}"][value="__other__"]`);
-      if (radio) radio.checked = true;
-      // Select case
-      const sel = document.querySelector(`select[data-qkey="${key}"]`);
-      if (sel) sel.value = '__other__';
-      // Checkbox case: toggle the "other" checkbox on if user types something,
-      // update the array in place
-      const otherCb = document.querySelector(`[data-qkey-multi-other="${key}"]`);
-      if (otherCb) {
-        otherCb.checked = el.value.trim().length > 0;
-        rebuildMultiAnswer(key);
-        saveDraft();
-        return;
+      const q = state.questions.find((x) => x.key === key);
+      const isCheckbox = q && q.type === 'checkbox';
+      if (isCheckbox) {
+        // Maintain canonical picks + this custom text
+        const canonical = (q.config && (q.config.options_ru || q.config.options)) || [];
+        const current = Array.isArray(state.answers[key]) ? state.answers[key] : [];
+        const kept = current.filter((v) => canonical.includes(v));
+        // el.value.trim() may be empty; still keep sentinel so Back button logic works
+        kept.push(el.value.trim() || ' ');
+        state.answers[key] = kept;
+      } else {
+        // radio / select
+        state.answers[key] = el.value;
       }
-      state.answers[key] = el.value; saveDraft();
+      saveDraft();
     });
   });
 
@@ -675,8 +731,38 @@ function bindEvents() {
   document.querySelectorAll('[data-qkey-multi-other]').forEach((el) => {
     const key = el.dataset.qkeyMultiOther;
     el.addEventListener('change', () => {
-      rebuildMultiAnswer(key);
+      if (el.checked) {
+        // Switch into "other focus" mode
+        const curr = state.answers[key];
+        const arr = Array.isArray(curr) ? curr.slice() : [];
+        // Put sentinel marker; user types real value into the textarea
+        arr.push(' ');
+        state.answers[key] = arr;
+        saveDraft();
+        render({ scrollTo: false });
+      } else {
+        rebuildMultiAnswer(key);
+        saveDraft();
+      }
+    });
+  });
+
+  // "← Back to options" inside focus mode
+  document.querySelectorAll('[data-other-back]').forEach((el) => {
+    const key = el.dataset.otherBack;
+    el.addEventListener('click', () => {
+      // Clear "other" value from state; re-render with all options visible
+      const q = state.questions.find((x) => x.key === key);
+      if (!q) return;
+      const canonical = (q.config && (q.config.options_ru || q.config.options)) || [];
+      if (q.type === 'checkbox') {
+        const arr = Array.isArray(state.answers[key]) ? state.answers[key].filter((v) => canonical.includes(v)) : [];
+        state.answers[key] = arr;
+      } else {
+        state.answers[key] = '';
+      }
       saveDraft();
+      render({ scrollTo: false });
     });
   });
 
