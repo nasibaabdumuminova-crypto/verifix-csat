@@ -587,18 +587,24 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  font-size: 13px;
-  color: #c5bfd6;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #E5E1F0;
   gap: 12px;
   line-height: 1.3;
+  font-weight: 500;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 4px;
+  width: 100%;
 }
 .nps-anchor-left, .nps-anchor-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-.nps-emo { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.nps-emo { font-size: 22px; line-height: 1; flex-shrink: 0; }
 
 .nps-scale {
   display: grid;
@@ -684,32 +690,32 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   transition: all 0.18s ease;
 }
 
-/* Confirmation row under the scale */
+/* Confirmation row under the scale — confirm value is the dominant
+   element on the screen after a rating is picked. */
 .rating-confirm {
   display: flex;
   justify-content: center;
   align-items: baseline;
-  gap: 8px;
-  padding-top: 12px;
-  margin-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   max-width: 480px;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
 }
 .rating-confirm-label {
-  font-size: 13px;
-  color: #c5bfd6;
+  font-size: 15px;
+  color: #C5BFD6;
+  font-weight: 400;
 }
 .rating-confirm-value {
-  font-size: 32px;
-  font-weight: 500;
+  font-size: 42px;
+  font-weight: 600;
   line-height: 1;
 }
 @media (min-width: 900px) {
-  .rating-confirm-label { font-size: 15px; }
-  .rating-confirm-value { font-size: 40px; }
   .nps-scale-5 .nps-tile.selected { font-size: 20px; }
 }
 
@@ -723,8 +729,6 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   .nps-anchors { font-size: 10px; gap: 8px; }
 }
 @media (min-width: 640px) {
-  .nps-anchors { font-size: 13px; margin-bottom: 10px; }
-  .nps-emo { font-size: 18px; }
   .nps-scale { gap: 6px; }
   .nps-tile { font-size: 15px; border-radius: 8px; }
   /* Dramatic pop only on 11-point NPS */
@@ -738,7 +742,6 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   }
 }
 @media (min-width: 900px) {
-  .nps-anchors { font-size: 14px; margin-bottom: 12px; }
   .nps-tile { font-size: 16px; }
   .nps-scale:not(.nps-scale-5) .nps-tile.selected {
     transform: scale(1.32);
@@ -1169,8 +1172,16 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 /* ========== SURVEY SINGLE-QUESTION MODE (v10)              ========= */
 /* ================================================================== */
 .page-survey-single .card-survey {
-  max-width: min(960px, 94vw);
-  padding: clamp(28px, 4vw, 68px) clamp(26px, 4.5vw, 72px);
+  min-width: auto;
+  max-width: 94vw;
+  padding: 24px 20px;
+}
+@media (min-width: 481px) {
+  .page-survey-single .card-survey {
+    min-width: 480px;
+    max-width: 560px;
+    padding: 32px 40px;
+  }
 }
 
 .survey-top {
@@ -1240,11 +1251,14 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 }
 
 .q-title-big {
-  font-size: clamp(22px, 2.5vw, 32px);
-  line-height: 1.3;
+  font-size: 18px;
+  line-height: 1.4;
   font-weight: 600;
-  margin: 0 0 clamp(12px, 1.5vw, 20px);
-  color: var(--c-text);
+  margin: 0 0 24px;
+  color: #FFFFFF;
+}
+@media (min-width: 481px) {
+  .q-title-big { font-size: 20px; }
 }
 .q-code {
   color: var(--c-muted);
@@ -1314,10 +1328,11 @@ textarea.text-input.big { min-height: 140px; }
 /* Mobile stays fluid via clamp() from earlier blocks.                */
 /* ================================================================== */
 @media (min-width: 900px) {
-  /* Card proportions — narrower card = shorter lines = faster reading */
+  /* Card proportions — fixed per spec: 480-560px wide */
   .page-survey-single .card-survey {
-    max-width: 840px;
-    padding: 56px 64px;
+    min-width: 480px;
+    max-width: 560px;
+    padding: 32px 40px;
   }
 
   /* Step 1 of 6 · Section name  —  meta label */
@@ -1356,14 +1371,15 @@ textarea.text-input.big { min-height: 140px; }
     margin: 0 0 26px;
   }
 
-  /* The main question title */
+  /* The main question title (desktop) — per spec: 20px, white */
   .page-survey-single .q-title-big {
-    font-size: 30px;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
+    font-size: 20px;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
     font-weight: 600;
     max-width: 760px;
-    margin: 0 0 14px;
+    margin: 0 0 24px;
+    color: #FFFFFF;
   }
   .page-survey-single .q-code {
     color: rgba(255, 255, 255, 0.55);
@@ -1476,14 +1492,11 @@ textarea.text-input.big { min-height: 140px; }
   .lang-code { font-size: 40px; }
   .lang-name { font-size: 18px; font-weight: 500; }
 
-  /* === INTRO card variation for consistency === */
-  .card-survey { max-width: 840px; }
+  /* Intro/language cards also follow the narrower 560px rule */
+  .card-survey { max-width: 560px; }
 }
 
-/* Large desktops (>= 1440px): no further font growth — just breathing room */
-@media (min-width: 1440px) {
-  .page-survey-single .card-survey { padding: 64px 72px; }
-}
+/* Card fixed to 480-560px per spec — no further breathing room expansions */
 
 /* ================================================================== */
 /* ========== ADMIN DASHBOARD TYPOGRAPHY (desktop)            ======== */
