@@ -7,7 +7,7 @@
   --c-bg-2:    #3f2e82;
   --c-bg-3:    #5e3aa8;
   --c-text:    #ffffff;
-  --c-muted:   #d4cfef;
+  --c-muted:   #e8e4f6;
   --c-card:    rgba(255, 255, 255, 0.14);
   --c-card-border: rgba(255, 255, 255, 0.26);
   --c-star:    #ffd84a;
@@ -1043,9 +1043,10 @@ textarea.text-input.big { min-height: 140px; }
 
   /* Step 1 of 6 · Section name  —  meta label */
   .page-survey-single .progress-meta {
-    font-size: 15px;
+    font-size: 17px;
     letter-spacing: 0.005em;
     margin-bottom: 12px;
+    color: rgba(255, 255, 255, 0.88);
   }
 
   /* Hero screen titles (intro / thanks / lang) */
@@ -1059,21 +1060,21 @@ textarea.text-input.big { min-height: 140px; }
 
   /* Intro body paragraphs */
   .page-survey-single .subtitle {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1.55;
-    max-width: 640px;
-    color: rgba(255, 255, 255, 0.88);
-    margin: 0 0 14px;
+    max-width: 680px;
+    color: rgba(255, 255, 255, 0.97);
+    margin: 0 0 16px;
   }
 
   /* Step help block (покрытый плашкой) */
   .page-survey-single .step-help {
-    font-size: 18px;
-    line-height: 1.55;
-    padding: 16px 20px;
-    max-width: 720px;
-    color: rgba(255, 255, 255, 0.86);
-    margin: 0 0 26px;
+    font-size: 24px;
+    line-height: 1.5;
+    padding: 20px 24px;
+    max-width: 780px;
+    color: rgba(255, 255, 255, 0.96);
+    margin: 0 0 28px;
   }
 
   /* The main question title */
@@ -1092,39 +1093,44 @@ textarea.text-input.big { min-height: 140px; }
 
   /* Question-specific help */
   .page-survey-single .q-help-big {
-    font-size: 17px;
-    line-height: 1.55;
-    max-width: 720px;
-    color: rgba(255, 255, 255, 0.80);
-    margin: 0 0 22px;
+    font-size: 22px;
+    line-height: 1.5;
+    max-width: 760px;
+    color: rgba(255, 255, 255, 0.94);
+    margin: 0 0 24px;
   }
 
   /* Input fields */
   .page-survey-single .text-input.big {
-    font-size: 18px;
-    line-height: 1.45;
-    padding: 18px 22px;
+    font-size: 24px;
+    line-height: 1.4;
+    padding: 20px 24px;
     border-radius: 14px;
+    color: rgba(255, 255, 255, 0.98);
   }
-  .page-survey-single textarea.text-input.big { min-height: 140px; }
+  .page-survey-single .text-input.big::placeholder {
+    color: rgba(255, 255, 255, 0.50);
+  }
+  .page-survey-single textarea.text-input.big { min-height: 160px; }
 
-  /* Dropdown — slightly larger so selected value reads comfortably */
+  /* Dropdown — matches input size */
   .page-survey-single .select-input.big {
-    font-size: 19px;
+    font-size: 24px;
     padding-right: 52px;
   }
 
   /* Radio & checkbox options */
   .page-survey-single .opt-big {
-    font-size: 17.5px;
+    font-size: 20px;
     line-height: 1.4;
-    padding: 18px 22px;
+    padding: 20px 24px;
     border-radius: 14px;
-    gap: 16px;
+    gap: 18px;
+    color: rgba(255, 255, 255, 0.98);
   }
   .page-survey-single .opt-big input[type="radio"],
   .page-survey-single .opt-big input[type="checkbox"] {
-    width: 22px; height: 22px;
+    width: 24px; height: 24px;
   }
 
   /* Scale (NPS 0–10, CSAT 1–5) */
@@ -1139,21 +1145,28 @@ textarea.text-input.big { min-height: 140px; }
   }
 
   /* Nav buttons */
-  .page-survey-single .form-nav { margin-top: 32px; }
+  .page-survey-single .form-nav { margin-top: 36px; }
   .page-survey-single .form-nav .btn-primary {
-    font-size: 17px;
-    padding: 15px 32px;
-    min-width: 180px;
+    font-size: 24px;
+    font-weight: 600;
+    padding: 18px 40px;
+    min-width: 220px;
     letter-spacing: 0;
   }
   .page-survey-single .form-nav .btn-ghost {
-    font-size: 16px;
-    padding: 13px 26px;
-    min-width: 130px;
+    font-size: 24px;
+    font-weight: 500;
+    padding: 16px 32px;
+    min-width: 160px;
   }
 
   /* Lang chip in corner — subtle */
-  .page-survey-single .lang-corner { font-size: 12px; }
+  .page-survey-single .lang-corner { font-size: 13px; }
+
+  /* Brand logo on survey header — prominent */
+  .page-survey-single .brand-name { font-size: 45px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-survey-single .brand-mark { width: 56px; height: 56px; border-radius: 14px; }
+  .page-survey-single .brand { gap: 16px; margin-bottom: 28px; }
 
   /* === LANG PICKER on desktop === */
   .lang-opt {
