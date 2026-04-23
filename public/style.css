@@ -580,12 +580,20 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 .nps-tile:hover { filter: brightness(0.92); }
 .nps-tile:active { transform: scale(0.96); }
 .nps-tile.selected {
-  outline: 2px solid #000;
-  outline-offset: 1px;
+  outline: 3px solid #fff;
+  outline-offset: -1px;
+  box-shadow:
+    0 0 0 3px #000,
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  transform: scale(1.12);
+  z-index: 2;
+  position: relative;
+  font-weight: 700;
 }
 .nps-tile:focus-visible {
-  outline: 2px solid var(--c-violet);
+  outline: 3px solid var(--c-violet);
   outline-offset: 2px;
+  z-index: 3;
 }
 
 .nps-det { background: #F7C1C1; border-color: #E24B4A; color: #501313; }
