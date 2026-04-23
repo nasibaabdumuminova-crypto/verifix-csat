@@ -259,6 +259,12 @@ function goNext() {
     if (q.key === 'phone' && !isPhoneValid(String(val))) {
       return showError(ui.invalidPhone);
     }
+    // min_length for long_text (e.g. NPS follow-ups require at least 3 chars)
+    if (q.type === 'long_text' && q.config && q.config.min_length) {
+      if (String(val).trim().length < q.config.min_length) {
+        return showError(ui.fillRequired);
+      }
+    }
   }
 
   const list = visibleQuestions();
@@ -446,9 +452,12 @@ function renderQuestion(q) {
     const v = escapeAttr(state.identity[q.key] || '');
     body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
   } else if (q.type === 'short_text') {
-    body = `<input type="text" class="text-input big" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
+    const customPh = q.config && q.config.placeholder ? t(q.config.placeholder) : ui.inputPlaceholder;
+    body = `<input type="text" class="text-input big" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(customPh)}" autofocus />`;
   } else if (q.type === 'long_text') {
-    body = `<textarea class="text-input big" data-qkey="${q.key}" rows="5" maxlength="3000" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus>${escapeHtml(val || '')}</textarea>`;
+    const customPh = q.config && q.config.placeholder ? t(q.config.placeholder) : ui.inputPlaceholder;
+    const maxLen = (q.config && q.config.max_length) || 3000;
+    body = `<textarea class="text-input big" data-qkey="${q.key}" rows="5" maxlength="${maxLen}" placeholder="${escapeAttr(customPh)}" autofocus>${escapeHtml(val || '')}</textarea>`;
   } else if (q.type === 'select') {
     body = renderSelect(q, val || '', 'data-qkey');
   } else if (q.type === 'radio') {

@@ -485,7 +485,7 @@
     "required": false,
     "config": {
       "options_ru": [
-        "КЭДО",
+        "E-Docs (КЭДО)",
         "Verifix Perform (KPI)",
         "Verifix Recruit (ATS, массовый подбор)",
         "Verifix Talent Management",
@@ -493,7 +493,7 @@
         "Всё необходимое уже используем"
       ],
       "options_uz_cyr": [
-        "КЭҲА (КЭДО)",
+        "E-Docs (КЭДО)",
         "Verifix Perform (KPI)",
         "Verifix Recruit (ATS, оммавий танлов)",
         "Verifix Talent Management",
@@ -501,7 +501,7 @@
         "Керакли ҳамма нарсадан фойдаланмоқдамиз"
       ],
       "options_uz_lat": [
-        "KEHA (KEDO)",
+        "E-Docs (КЭДО)",
         "Verifix Perform (KPI)",
         "Verifix Recruit (ATS, ommaviy tanlov)",
         "Verifix Talent Management",
@@ -607,7 +607,7 @@
     "show_if": null
   },
   {
-    "key": "nps_like",
+    "key": "nps_range_0_3",
     "step_number": 4,
     "step_title": {
       "ru": "Ценность и удовлетворённость",
@@ -616,21 +616,29 @@
     },
     "position": 4,
     "title": {
-      "ru": "Что именно Вам нравится больше всего в Verifix?",
-      "uz_cyr": "Verifix-да Сизга айнан нима энг кўп ёқади?",
-      "uz_lat": "Verifix-da Sizga aynan nima eng koʻp yoqadi?"
+      "ru": "Нам очень жаль, что Verifix пока не оправдывает Ваших ожиданий. Расскажите, что пошло не так?",
+      "uz_cyr": "Verifix ҳозирча кутилганидек ишламаганидан жуда афсусдамиз. Нима нотўғри кетганини айтиб берасизми?",
+      "uz_lat": "Verifix hozircha kutilganidek ishlamaganidan juda afsusdamiz. Nima notoʻgʻri ketganini aytib berasizmi?"
     },
     "type": "long_text",
     "required": true,
-    "config": null,
+    "config": {
+      "min_length": 3,
+      "max_length": 1000,
+      "placeholder": {
+        "ru": "Опишите проблему или ситуацию…",
+        "uz_cyr": "Муаммо ёки вазиятни тасвирлаб беринг…",
+        "uz_lat": "Muammo yoki vaziyatni tasvirlab bering…"
+      }
+    },
     "show_if": {
       "question_key": "nps",
-      "op": "gte",
-      "value": 9
+      "op": "in",
+      "values": [0, 1, 2, 3]
     }
   },
   {
-    "key": "nps_improve",
+    "key": "nps_range_4_6",
     "step_number": 4,
     "step_title": {
       "ru": "Ценность и удовлетворённость",
@@ -639,17 +647,87 @@
     },
     "position": 5,
     "title": {
-      "ru": "Что должно измениться, чтобы Ваша оценка выросла до 9–10?",
-      "uz_cyr": "Сизнинг баҳоингиз 9–10 гача ўсиши учун нима ўзгариши керак?",
-      "uz_lat": "Sizning bahoingiz 9–10 gacha oʻsishi uchun nima oʻzgarishi kerak?"
+      "ru": "Спасибо за честный ответ. Что мы могли бы улучшить, чтобы Ваша оценка выросла?",
+      "uz_cyr": "Очиқ жавобингиз учун раҳмат. Баҳоингиз юқорироқ бўлиши учун нимани яхшилашимиз мумкин?",
+      "uz_lat": "Ochiq javobingiz uchun rahmat. Bahoingiz yuqoriroq boʻlishi uchun nimani yaxshilashimiz mumkin?"
     },
     "type": "long_text",
     "required": true,
-    "config": null,
+    "config": {
+      "min_length": 3,
+      "max_length": 1000,
+      "placeholder": {
+        "ru": "Что нужно изменить или улучшить…",
+        "uz_cyr": "Нимани ўзгартириш ёки яхшилаш керак…",
+        "uz_lat": "Nimani oʻzgartirish yoki yaxshilash kerak…"
+      }
+    },
     "show_if": {
       "question_key": "nps",
-      "op": "lte",
-      "value": 8
+      "op": "in",
+      "values": [4, 5, 6]
+    }
+  },
+  {
+    "key": "nps_range_7_8",
+    "step_number": 4,
+    "step_title": {
+      "ru": "Ценность и удовлетворённость",
+      "uz_cyr": "Қиймат ва қониқиш",
+      "uz_lat": "Qiymat va qoniqish"
+    },
+    "position": 6,
+    "title": {
+      "ru": "Спасибо за оценку! Что нужно добавить или изменить, чтобы Вы поставили 9 или 10?",
+      "uz_cyr": "Баҳоингиз учун раҳмат! 9 ёки 10 баҳо қўйишингиз учун нима қўшиш ёки ўзгартириш керак?",
+      "uz_lat": "Bahoingiz uchun rahmat! 9 yoki 10 baho qoʻyishingiz uchun nima qoʻshish yoki oʻzgartirish kerak?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": {
+      "min_length": 3,
+      "max_length": 1000,
+      "placeholder": {
+        "ru": "Чего не хватает, чтобы Вы рекомендовали Verifix…",
+        "uz_cyr": "Verifix-ни тавсия қилишингиз учун нима етишмаяпти…",
+        "uz_lat": "Verifix-ni tavsiya qilishingiz uchun nima yetishmayapti…"
+      }
+    },
+    "show_if": {
+      "question_key": "nps",
+      "op": "in",
+      "values": [7, 8]
+    }
+  },
+  {
+    "key": "nps_range_9_10",
+    "step_number": 4,
+    "step_title": {
+      "ru": "Ценность и удовлетворённость",
+      "uz_cyr": "Қиймат ва қониқиш",
+      "uz_lat": "Qiymat va qoniqish"
+    },
+    "position": 7,
+    "title": {
+      "ru": "Спасибо за высокую оценку! Что Вам нравится в Verifix больше всего?",
+      "uz_cyr": "Юқори баҳо учун раҳмат! Verifix-да Сизга энг кўп нима ёқади?",
+      "uz_lat": "Yuqori baho uchun rahmat! Verifix-da Sizga eng koʻp nima yoqadi?"
+    },
+    "type": "long_text",
+    "required": true,
+    "config": {
+      "min_length": 3,
+      "max_length": 1000,
+      "placeholder": {
+        "ru": "Расскажите, что Вам особенно ценно…",
+        "uz_cyr": "Сиз учун айниқса нима қимматли эканини айтиб беринг…",
+        "uz_lat": "Siz uchun ayniqsa nima qimmatli ekanini aytib bering…"
+      }
+    },
+    "show_if": {
+      "question_key": "nps",
+      "op": "in",
+      "values": [9, 10]
     }
   },
   {
@@ -660,7 +738,7 @@
       "uz_cyr": "Қиймат ва қониқиш",
       "uz_lat": "Qiymat va qoniqish"
     },
-    "position": 6,
+    "position": 8,
     "title": {
       "ru": "Насколько Вы довольны продуктом Verifix в целом?",
       "uz_cyr": "Verifix маҳсулотидан умуман қанчалик мамнунсиз?",
