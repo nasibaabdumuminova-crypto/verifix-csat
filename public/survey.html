@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=13" />
+<link rel="stylesheet" href="/style.css?v=14" />
 </head>
 <body class="survey-v2">
   <div class="survey-shell">
@@ -193,7 +193,22 @@ const state = {
   answers: {},
   /** first-time draft resume was prompted */
   resumePrompted: false,
+  /** stable total used as the counter denominator — set once questions
+   *  are loaded, never changes during the flow even as branching
+   *  grows or shrinks the visible list. */
+  totalStable: 0,
 };
+
+// Stable counter total = count of unconditional questions + one slot per
+// unique branching trigger (since only one branch per trigger is visible
+// at a time, worst-case N distinct branch groups contribute N items).
+function computeStableTotal(questions) {
+  const always = questions.filter((q) => !q.show_if).length;
+  const triggers = new Set(
+    questions.filter((q) => q.show_if && q.show_if.question_key).map((q) => q.show_if.question_key)
+  );
+  return always + triggers.size;
+}
 
 // ============ INIT ============
 async function init() {
@@ -208,6 +223,7 @@ async function init() {
     state.questions = (data.questions || []).sort(
       (a, b) => a.step_number - b.step_number || a.position - b.position || a.id - b.id
     );
+    state.totalStable = computeStableTotal(state.questions);
 
     // Try to load v11, else migrate from v10 once
     const raw = safeGet(STORAGE_KEY) || (function () {
@@ -418,11 +434,16 @@ function render(opts = {}) {
       state.cursor = list.length ? list[0].key : 'thanks';
       return render({ scrollTop: true });
     }
-    const pct = Math.round(((idx + 1) / list.length) * 100);
+    // Stable denominator so the counter never jumps when branching
+    // reveals or hides questions. Both the "X of Y" text and the
+    // percentage bar use the same Y.
+    const total = Math.max(state.totalStable || MAX_QUESTIONS, list.length);
+    const safeIdx = Math.min(idx + 1, total);
+    const pct = Math.round((safeIdx / total) * 100);
     progressTop.hidden = false;
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressMeta').textContent =
-      ui.questionOf(idx + 1, Math.max(MAX_QUESTIONS, list.length)) + ' · ' + pct + '%';
+      ui.questionOf(safeIdx, total) + ' · ' + pct + '%';
     if (sideProgress) {
       sideProgress.hidden = false;
       sideProgressFill.style.width = pct + '%';
