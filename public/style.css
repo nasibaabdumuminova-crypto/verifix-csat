@@ -1733,9 +1733,11 @@ body.survey-v2 #starfield { display: none !important; }
 }
 .btn-next:active:not(:disabled) { transform: scale(0.99); }
 .btn-next:disabled {
-  opacity: 0.4;
+  background: #E4E2EC;
+  color: #8D89A6;
   cursor: not-allowed;
   box-shadow: none;
+  opacity: 1;
 }
 
 .msg {
@@ -1746,6 +1748,23 @@ body.survey-v2 #starfield { display: none !important; }
   text-align: center;
 }
 .msg.error { color: #E24B4A; }
+
+/* Soft inline validation hint shown under an input while the user is
+   still entering something that does not yet satisfy the rule. */
+body.survey-v2 .inline-hint {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #9A4B3E;
+  background: #FDF1EC;
+  border: 1px solid #F5D8CC;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+body.survey-v2 .inline-hint[hidden] { display: none; }
+@media (min-width: 1024px) {
+  body.survey-v2 .inline-hint { font-size: 15px; padding: 10px 14px; }
+}
 
 /* ===== INPUTS ===== */
 body.survey-v2 .text-input {
@@ -2150,12 +2169,12 @@ body.survey-v2 .thanks-actions .btn-back {
   }
   body.survey-v2 .action-bar {
     max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 28px auto 0;  /* override global margin-top:auto — keep bar right under content */
     position: static;
     padding-bottom: 20px;
     border-top: 0;
   }
+  body.survey-v2 .question-area { flex: 0 1 auto; min-height: 0; }
   body.survey-v2 .msg { max-width: 720px; margin: 0 auto; }
   body.survey-v2 .q-head { font-size: 30px; font-weight: 500; line-height: 1.25; margin-bottom: 14px; }
   body.survey-v2 .q-hint { font-size: 16px; color: #5F5E5A; margin-bottom: 28px; }

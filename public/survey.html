@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=11" />
+<link rel="stylesheet" href="/style.css?v=12" />
 </head>
 <body class="survey-v2">
   <div class="survey-shell">
@@ -347,6 +347,37 @@ function isCurrentScreenValid() {
 function refreshNextBtn() {
   const btn = document.getElementById('nextBtn');
   if (btn) btn.disabled = !isCurrentScreenValid();
+  refreshInlineHint();
+}
+
+// Soft inline hint shown under the field when the user has typed
+// something, but the entry doesn't satisfy validation yet. Explains
+// why the "Next" button stays disabled.
+function refreshInlineHint() {
+  const host = document.getElementById('inlineHint');
+  if (!host) return;
+  const q = currentQuestion();
+  if (!q) { host.textContent = ''; host.hidden = true; return; }
+  const ui = UI[state.lang] || UI.ru;
+  const val = answerFor(q.key);
+  const strVal = val == null ? '' : String(val).trim();
+  let hint = '';
+  if (strVal.length > 0) {
+    if (q.key === 'contact_name' &&
+        strVal.split(/\s+/).filter(Boolean).length < 2) {
+      hint = ui.shortName;
+    } else if (q.key === 'company_name' && strVal.length < 3) {
+      hint = ui.shortCompany;
+    } else if (q.key === 'phone') {
+      // Only nag if the user has actually typed digits beyond the "+998" prefix.
+      const digitsAfterPrefix = strVal.replace(/\D/g, '').replace(/^998/, '');
+      if (digitsAfterPrefix.length > 0 && !isPhoneValid(strVal)) {
+        hint = ui.invalidPhone;
+      }
+    }
+  }
+  if (hint) { host.textContent = hint; host.hidden = false; }
+  else { host.textContent = ''; host.hidden = true; }
 }
 
 function goNext() {
@@ -641,6 +672,7 @@ function renderQuestion(q) {
     <h2 class="q-head">${title}${required}</h2>
     ${helpText}
     <div class="q-body">${body}</div>
+    <div class="inline-hint" id="inlineHint" hidden></div>
   `;
 }
 
