@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=11" />
+<link rel="stylesheet" href="/style.css?v=13" />
 </head>
 <body class="survey-v2">
   <div class="survey-shell">
@@ -253,6 +253,9 @@ function saveDraft() {
   }, 500);
 }
 function clearDraft() {
+  // Cancel any pending debounced save so it can't race us and rewrite
+  // the draft we're deleting right now.
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   safeRemove(STORAGE_KEY);
   for (const k of LEGACY_KEYS) safeRemove(k);
 }
@@ -679,8 +682,13 @@ function renderScale(q, val) {
   const scaleCls = isNps ? 'nps-scale nps-scale-11' : 'nps-scale nps-scale-' + count;
   const cssCols = `repeat(${count}, minmax(0, 1fr))`;
 
+  // Width modifier: NPS (0-10) needs a wider band than a 5-point CSAT.
+  // Using a modifier class keeps the anchors row locked to the same width
+  // as the scale so the low/high labels always land on the scale ends.
+  const wrapMod = isNps ? 'scale-wrap--wide' : 'scale-wrap--compact';
+
   return `
-    <div class="scale-wrap">
+    <div class="scale-wrap ${wrapMod}">
       <div class="scale-anchors">
         <div class="scale-anchor-left"><span class="scale-emo">${leftEmoji}</span><span>${escapeHtml(low)}</span></div>
         <div class="scale-anchor-right"><span>${escapeHtml(high)}</span><span class="scale-emo">${rightEmoji}</span></div>
@@ -980,7 +988,11 @@ async function submit() {
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Ошибка отправки');
+    // Answers are in the DB now — wipe ALL client state so a re-open of the
+    // survey starts blank (desktop + mobile, localStorage + sessionStorage).
     clearDraft();
+    state.answers = {};
+    state.identity = { company_name: '', contact_name: '', position: '', phone: '+998 ' };
     state.cursor = 'thanks';
     render({ scrollTop: true });
   } catch (e) {

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style-v10.css?v=1" />
+<link rel="stylesheet" href="/style-v10.css?v=2" />
 </head>
 <body class="page-public page-survey page-survey-single">
   <div class="bg-glow"></div>
@@ -178,7 +178,12 @@ function loadDraft() {
     if (!state.lang) state.cursor = 'lang';
   } catch (e) {}
 }
-function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+function clearDraft() {
+  // Wipe the draft from both storages — Telegram WebView sometimes falls
+  // back to sessionStorage, so we have to cover both sides.
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
+}
 
 // ============ i18n ============
 function t(x) {
@@ -580,8 +585,11 @@ function renderQuestion(q) {
       : '';
 
     const scaleCountClass = isNps ? '' : ` nps-scale-${count}`;
+    // Width modifier on the wrapper so anchors and tiles share the same
+    // max-width — labels always land on the scale endpoints.
+    const wrapMod = isNps ? 'nps-scale-wrap--wide' : 'nps-scale-wrap--compact';
     body = `
-      <div class="nps-scale-wrap">
+      <div class="nps-scale-wrap ${wrapMod}">
         <div class="nps-anchors" aria-hidden="true">
           <div class="nps-anchor-left"><span class="nps-emo">${leftEmoji}</span><span>${escapeHtml(low)}</span></div>
           <div class="nps-anchor-right"><span>${escapeHtml(high)}</span><span class="nps-emo">${rightEmoji}</span></div>
@@ -896,7 +904,11 @@ async function submit() {
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Ошибка отправки');
+    // Answers are persisted in the DB now — wipe everything client-side so
+    // reopening the survey (desktop or mobile) starts with a fresh blank form.
     clearDraft();
+    state.answers = {};
+    state.identity = { company_name: '', contact_name: '', position: '', phone: '' };
     state.cursor = 'thanks';
     render({ scrollTop: true });
   } catch (e) {
@@ -925,6 +937,6 @@ function escapeAttr(s) { return escapeHtml(s); }
 
 init();
 </script>
-<script src="/stars-v10.js?v=1"></script>
+<script src="/stars-v10.js?v=2"></script>
 </body>
 </html>

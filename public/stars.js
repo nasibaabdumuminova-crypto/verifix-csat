@@ -1,4 +1,5 @@
-// Interactive star field — canvas particles that attract to cursor on hover
+// Interactive star field — canvas particles that attract to cursor on hover,
+// plus occasional shooting stars that streak diagonally across the sky.
 (function () {
   const canvas = document.createElement('canvas');
   canvas.id = 'starfield';
@@ -6,10 +7,15 @@
   document.body.prepend(canvas);
   const ctx = canvas.getContext('2d');
 
-  let W, H, stars = [], mouse = { x: -9999, y: -9999 };
-  const STAR_COUNT = 120;
+  let W, H, stars = [], shootingStars = [], mouse = { x: -9999, y: -9999 };
+  // Bumped per spec: more stars, brighter, with occasional shooting stars.
+  const STAR_COUNT = 180;
   const ATTRACT_RADIUS = 260;
   const ATTRACT_FORCE = 0.12;
+  // Shooting stars: spawn rate in ms (stochastic — not a fixed cadence).
+  const SHOOT_MIN_INTERVAL = 1800;
+  const SHOOT_MAX_INTERVAL = 4200;
+  let nextShootAt = Date.now() + SHOOT_MIN_INTERVAL;
 
   function resize() {
     W = canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 1280;
@@ -22,13 +28,37 @@
       y: Math.random() * H,
       baseX: 0,
       baseY: 0,
-      r: Math.random() * 1.8 + 0.4,
-      alpha: Math.random() * 0.6 + 0.2,
-      vx: (Math.random() - 0.5) * 0.15,
-      vy: (Math.random() - 0.5) * 0.15,
+      // Slightly bigger on average — bumped from 0.4–2.2 to 0.6–2.6.
+      r: Math.random() * 2.0 + 0.6,
+      // Brighter baseline — bumped from 0.2–0.8 to 0.35–1.0.
+      alpha: Math.random() * 0.65 + 0.35,
+      // A touch more drift so the field feels alive.
+      vx: (Math.random() - 0.5) * 0.22,
+      vy: (Math.random() - 0.5) * 0.22,
       pulse: Math.random() * Math.PI * 2,
-      pulseSpeed: Math.random() * 0.02 + 0.005,
+      pulseSpeed: Math.random() * 0.025 + 0.008,
     };
+  }
+
+  // Shooting star — diagonal streak that "falls" across the canvas.
+  function spawnShootingStar() {
+    // Start from the top half of the screen, random x; angle down-right or down-left.
+    const fromLeft = Math.random() > 0.5;
+    const startX = fromLeft ? -40 : W + 40;
+    const startY = Math.random() * H * 0.55;
+    const angle = fromLeft
+      ? (Math.PI / 6) + Math.random() * (Math.PI / 5)   // 30°–66° (down-right)
+      : Math.PI - ((Math.PI / 6) + Math.random() * (Math.PI / 5)); // mirror
+    const speed = 8 + Math.random() * 6;  // 8–14 px/frame
+    shootingStars.push({
+      x: startX,
+      y: startY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,           // fades from 1 → 0
+      decay: 0.012,      // ~80 frames ≈ 1.3s
+      trail: [],
+    });
   }
 
   function init() {
@@ -119,6 +149,46 @@
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Shooting stars — streak with a fading trail.
+    const now = Date.now();
+    if (now >= nextShootAt) {
+      spawnShootingStar();
+      nextShootAt = now + SHOOT_MIN_INTERVAL + Math.random() * (SHOOT_MAX_INTERVAL - SHOOT_MIN_INTERVAL);
+    }
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      s.trail.push({ x: s.x, y: s.y });
+      if (s.trail.length > 14) s.trail.shift();
+      s.x += s.vx;
+      s.y += s.vy;
+      s.life -= s.decay;
+
+      // Draw the tapered trail (tail fading).
+      for (let k = 0; k < s.trail.length; k++) {
+        const t = s.trail[k];
+        const p = k / s.trail.length;
+        ctx.globalAlpha = p * s.life * 0.9;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, (0.6 + p * 1.8) * s.life, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Bright head with a soft halo.
+      ctx.globalAlpha = Math.max(0, s.life);
+      ctx.shadowColor = 'rgba(220, 200, 255, 0.95)';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 2.2 * s.life, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (s.life <= 0 || s.x < -60 || s.x > W + 60 || s.y > H + 60) {
+        shootingStars.splice(i, 1);
       }
     }
     ctx.globalAlpha = 1;

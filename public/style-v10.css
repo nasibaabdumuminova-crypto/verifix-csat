@@ -533,7 +533,22 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 /* ================================================================== */
 /* ========== NPS scale (0–10, single row, colour-zoned)    ========== */
 /* ================================================================== */
-.nps-scale-wrap { margin-top: 4px; }
+/* Wrapper is adaptive: width scales with the viewport so the low/high
+   anchor labels always sit flush with the scale endpoints. */
+.nps-scale-wrap {
+  margin-top: 4px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+.nps-scale-wrap--wide {
+  /* NPS 0-10 — needs a wider band for 11 tiles */
+  max-width: clamp(320px, 94%, 680px);
+}
+.nps-scale-wrap--compact {
+  /* 5-point CSAT / UX / support / manager — compact & centred */
+  max-width: clamp(260px, 80%, 440px);
+}
 
 .nps-anchors {
   display: flex;
@@ -558,20 +573,12 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   gap: 4px;
   width: 100%;
 }
-/* 5-point variant (CSAT, UX, support, manager) — horizontally centred in its row */
+/* 5-point variant (CSAT, UX, support, manager).
+   Width is now controlled by the wrapper (.nps-scale-wrap--compact) —
+   tiles just fill it. */
 .nps-scale.nps-scale-5 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  max-width: 560px;
-  margin-left: auto;
-  margin-right: auto;
-}
-/* Centre the anchors row above the 5-point tiles so the low/high
-   labels sit flush with the scale below them. */
-.nps-scale-wrap:has(.nps-scale-5) .nps-anchors {
-  max-width: 560px;
-  margin-left: auto;
-  margin-right: auto;
+  gap: clamp(6px, 1.5vw, 10px);
 }
 
 .nps-tile {

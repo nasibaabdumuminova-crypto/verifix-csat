@@ -7,11 +7,7 @@
       "uz_cyr": "Алоқа маълумотлари",
       "uz_lat": "Aloqa maʼlumotlari"
     },
-    "step_help": {
-      "ru": "Чтобы мы могли вернуться к Вам с уточнениями.",
-      "uz_cyr": "Сизга аниқлаштириш учун қайта мурожаат қила олишимиз учун.",
-      "uz_lat": "Sizga aniqlashtirish uchun qayta murojaat qila olishimiz uchun."
-    },
+    "step_help": null,
     "position": 1,
     "title": {
       "ru": "Название компании",

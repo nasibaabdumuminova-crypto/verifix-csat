@@ -1893,14 +1893,24 @@ body.survey-v2 .opt-other-back {
   min-width: auto !important;
 }
 
-/* ===== SCALE (NPS + 5-point) ===== */
+/* ===== SCALE (NPS + 5-point) — adaptive, not fixed =====
+   Width scales with the viewport so the "Очень недоволен / Полностью доволен"
+   anchor labels always land on the endpoints of the tile row. */
 body.survey-v2 .scale-wrap {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   width: 100%;
-  max-width: 520px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+body.survey-v2 .scale-wrap--wide {
+  /* NPS 0-10: 11 tiles need more horizontal room */
+  max-width: clamp(320px, 95%, 680px);
+}
+body.survey-v2 .scale-wrap--compact {
+  /* 5-point CSAT / UX / support / manager scales — compact, centred */
+  max-width: clamp(260px, 82%, 440px);
 }
 body.survey-v2 .scale-anchors {
   display: flex;
