@@ -233,7 +233,10 @@ async function initDb() {
   // Safe heuristic: only auto-retire keys that were once in a seed (we can't
   // know this without a registry, so we limit removals to the explicit list
   // of retired keys below).
-  const RETIRED_KEYS = ['nps_like', 'nps_improve'];
+  // Keys that existed in an earlier seed but have been removed since.
+  // They stay in the DB (soft-deleted) so historical responses keep their
+  // reference integrity, but they won't be served to the survey UI.
+  const RETIRED_KEYS = ['nps_like', 'nps_improve', 'retention_reason'];
   if (RETIRED_KEYS.length) {
     const r = await pool.query(
       `UPDATE survey_questions
@@ -500,19 +503,56 @@ function computeStats(responses) {
   const npsScore = npsValues.length ? Math.round((prom - det) / npsValues.length * 100) : null;
 
   const avg = (arr) => arr.length ? +(arr.reduce((s, x) => s + x, 0) / arr.length).toFixed(2) : null;
-  const csatProduct = avg(valByKey('csat_product').map(Number).filter(Number.isFinite));
 
-  const scales = {};
-  for (const key of ['web_ux_score', 'mobile_ux_score', 'support_score', 'manager_score']) {
-    scales[key] = avg(valByKey(key).map(Number).filter(Number.isFinite));
-  }
+  // Build a full breakdown for a 1–5 scale question: avg, count, histogram
+  // of tile counts, and detractor/neutral/promoter splits so the dashboard
+  // can render NPS-style colour bars for CSAT / UX / support / manager.
+  const scaleBreakdown = (key) => {
+    const nums = valByKey(key).map(Number).filter(Number.isFinite);
+    if (!nums.length) {
+      return { avg: null, count: 0, histogram: { 1:0, 2:0, 3:0, 4:0, 5:0 },
+               detractors: 0, neutrals: 0, promoters: 0 };
+    }
+    const histogram = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+    for (const n of nums) {
+      const k = Math.max(1, Math.min(5, Math.round(n)));
+      histogram[k] += 1;
+    }
+    return {
+      avg: avg(nums),
+      count: nums.length,
+      histogram,
+      detractors: histogram[1] + histogram[2],
+      neutrals:   histogram[3],
+      promoters:  histogram[4] + histogram[5],
+    };
+  };
 
+  const csatProduct = scaleBreakdown('csat_product');
+  const scales = {
+    web_ux_score:    scaleBreakdown('web_ux_score'),
+    mobile_ux_score: scaleBreakdown('mobile_ux_score'),
+    support_score:   scaleBreakdown('support_score'),
+    manager_score:   scaleBreakdown('manager_score'),
+  };
+
+  // Defensive: drop values that are Unicode replacement characters (lone
+  // \uFFFD means the original bytes were not valid UTF-8 and should NOT
+  // be shown to the operator as mojibake). Also drop empty strings.
+  const looksCorrupt = (s) => {
+    const str = String(s);
+    // 1+ replacement char OR entirely non-readable punctuation
+    return /\uFFFD/.test(str) || str.trim() === '';
+  };
   const distribution = (key) => {
     const out = {};
+    let corruptCount = 0;
     for (const v of valByKey(key)) {
-      const k = Array.isArray(v) ? '—' : String(v);
-      out[k] = (out[k] || 0) + 1;
+      const raw = Array.isArray(v) ? '—' : String(v);
+      if (looksCorrupt(raw)) { corruptCount += 1; continue; }
+      out[raw] = (out[raw] || 0) + 1;
     }
+    if (corruptCount > 0) out['(данные повреждены)'] = corruptCount;
     return out;
   };
 
@@ -535,6 +575,8 @@ function computeStats(responses) {
       company_size: distribution('company_size'),
       mobile_usage: distribution('mobile_usage'),
       callback_request: distribution('callback_request'),
+      headcount_plans: distribution('headcount_plans'),
+      reference_willingness: distribution('reference_willingness'),
     },
     languageDistribution: langDist,
   };
@@ -765,6 +807,46 @@ app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="verifix_survey.csv"');
     res.send('\uFEFF' + lines.join('\n'));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Excel export — we ship an HTML table with a .xls extension.
+// Excel / LibreOffice Calc / Google Sheets all open this cleanly and
+// preserve Unicode, unlike CSV which needs a BOM for Cyrillic. This
+// avoids pulling in a heavy xlsx dependency.
+app.get('/api/admin/survey/export.xls', requireAuth, async (req, res) => {
+  try {
+    const [responses, questions] = await Promise.all([
+      getAllResponses(),
+      getAllQuestions({ includeDeleted: true }),
+    ]);
+    const esc = (s) => {
+      if (s === null || s === undefined) return '';
+      const str = Array.isArray(s) ? s.join(' | ') : String(s);
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    const header = ['ID', 'Дата', 'Язык', 'Компания', 'ФИО', 'Должность', 'Телефон',
+                    ...questions.map((q) => (q.title && q.title.ru) || q.key)];
+    const rows = responses.map((r) => {
+      const byKey = new Map(r.answers.map((a) => [a.question_key, a.value]));
+      return [r.id, r.created_at, r.language || 'ru',
+              r.company_name, r.contact_name || '', r.position || '', r.phone || '',
+              ...questions.map((q) => byKey.get(q.key))];
+    });
+    const html =
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"/></head>' +
+      '<body><table border="1" cellspacing="0">' +
+      '<tr>' + header.map((h) => `<th>${esc(h)}</th>`).join('') + '</tr>' +
+      rows.map((row) => '<tr>' + row.map((v) => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') +
+      '</table></body></html>';
+    res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="verifix_survey.xls"');
+    res.send('\uFEFF' + html);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Ошибка сервера' });
