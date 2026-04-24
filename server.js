@@ -8,13 +8,6 @@ const PORT = process.env.PORT || 3000;
 // with a stray newline or leading/trailing space — that used to lock
 // the operator out of /admin/survey with a correct-looking password.
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '123').trim();
-
-// Recovery password — always works in addition to the one in
-// ADMIN_PASSWORD env var. Intentionally hardcoded so the operator can
-// never get locked out of the admin even if Railway variables drift or
-// get corrupted. Known to be in git history — NOT a secret. Change it
-// here and redeploy if the current value ever leaks in an embarrassing way.
-const ADMIN_PASSWORD_RECOVERY = 'verifix2025';
 const USE_DB = !!process.env.DATABASE_URL;
 
 // Storage abstraction: PostgreSQL in production, in-memory fallback for local preview.
@@ -605,7 +598,7 @@ function checkAuth(req) {
   // auto-fill / password managers and we don't want that locking anyone out.
   const pwd = raw == null ? '' : String(raw).trim();
   if (!pwd) return false;
-  return pwd === ADMIN_PASSWORD || pwd === ADMIN_PASSWORD_RECOVERY;
+  return pwd === ADMIN_PASSWORD;
 }
 function requireAuth(req, res, next) {
   if (!checkAuth(req)) return res.status(401).json({ error: 'Неверный пароль' });
