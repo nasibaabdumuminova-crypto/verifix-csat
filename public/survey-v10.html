@@ -459,15 +459,12 @@ function renderIntro() {
 
 function renderThanks() {
   const ui = UI[state.lang];
+  // No action buttons — clients just close the tab after seeing "Спасибо!"
   return `
     <div class="thanks-block">
       <div class="thanks-check">✓</div>
       <h1 class="screen-title">${escapeHtml(ui.thanks)}</h1>
       <p class="subtitle">${escapeHtml(ui.thanksBody)}</p>
-      <div class="thanks-actions">
-        <a class="btn-primary" href="https://verifix.uz" target="_blank" rel="noopener">${escapeHtml(ui.goHome)}</a>
-        <button type="button" class="btn-ghost" id="restartBtn">${escapeHtml(ui.restart)}</button>
-      </div>
     </div>
   `;
 }
