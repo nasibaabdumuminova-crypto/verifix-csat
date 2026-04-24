@@ -216,11 +216,14 @@ class Handler(BaseHTTPRequestHandler):
             "/index.html": ("index.html", "text/html; charset=utf-8"),
             "/admin": ("admin.html", "text/html; charset=utf-8"),
             "/survey": ("survey.html", "text/html; charset=utf-8"),
+            "/v10": ("survey-v10.html", "text/html; charset=utf-8"),
             "/admin/survey": ("admin-survey.html", "text/html; charset=utf-8"),
             "/style.css": ("style.css", "text/css; charset=utf-8"),
+            "/style-v10.css": ("style-v10.css", "text/css; charset=utf-8"),
             "/logo.svg": ("logo.svg", "image/svg+xml; charset=utf-8"),
             "/logo.png": ("logo.png", "image/png"),
             "/stars.js": ("stars.js", "application/javascript; charset=utf-8"),
+            "/stars-v10.js": ("stars-v10.js", "application/javascript; charset=utf-8"),
         }
         if path in static_map:
             fn, ct = static_map[path]
