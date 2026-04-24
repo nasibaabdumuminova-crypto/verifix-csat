@@ -27,8 +27,12 @@
       <div class="side-context" id="sideContext"></div>
       <nav class="side-steps" id="sideSteps" aria-label="Шаги опросника"></nav>
       <div class="side-foot">
-        <div class="side-foot-line" id="sideFootTime">~10 минут · ответы защищены</div>
+        <div class="side-foot-line" id="sideFootTime">~5 минут · ответы защищены</div>
         <div class="side-foot-line muted">© Verifix</div>
+      </div>
+      <!-- Thin white progress bar on the mobile purple header -->
+      <div class="side-progress" id="sideProgress" hidden>
+        <div class="side-progress-fill" id="sideProgressFill"></div>
       </div>
     </aside>
 
@@ -62,10 +66,10 @@ const MAX_QUESTIONS = 30;  // stable ceiling for the progress counter
 const UI = {
   ru: {
     selectLangHeading: 'Выберите язык, чтобы начать',
-    selectLangBody: 'Опрос займёт примерно 10 минут. Отвечайте честно — это поможет нам сделать Verifix лучше.',
-    surveyTitle: 'Ваше мнение о продукте и сервисе',
-    intro: 'Опрос займёт примерно 10 минут. Все ответы мы читаем лично и используем для развития Verifix.',
-    introNote: 'Название компании, ФИО и телефон обязательны — чтобы менеджер мог связаться, если потребуется.',
+    selectLangBody: 'Опрос займёт примерно 5 минут. Отвечайте честно — это поможет нам сделать Verifix лучше.',
+    surveyTitle: 'Спасибо, что уделите нам 5 минут',
+    intro: 'Мы хотим понять, что в Verifix работает хорошо, а что можно улучшить. Все ответы читает команда лично. Если захотите обсудить — менеджер свяжется.',
+    introNote: '~5 минут · ответы защищены',
     start: 'Начать',
     back: 'Назад',
     next: 'Далее',
@@ -99,10 +103,10 @@ const UI = {
   },
   uz_cyr: {
     selectLangHeading: 'Бошлаш учун тилни танланг',
-    selectLangBody: 'Сўровнома тахминан 10 дақиқа давом этади. Очиқ жавоб беринг — бу Verifix-ни янада яхшилашга ёрдам беради.',
-    surveyTitle: 'Маҳсулот ва хизмат ҳақида фикрингиз',
-    intro: 'Сўровнома тахминан 10 дақиқа давом этади. Ҳар бир жавобни шахсан ўқиб, Verifix-ни ривожлантириш учун фойдаланамиз.',
-    introNote: 'Компания номи, Ф.И.Ш. ва телефон рақами мажбурий — менежер Сиз билан боғланиши учун керак.',
+    selectLangBody: 'Сўровнома тахминан 5 дақиқа давом этади. Очиқ жавоб беринг — бу Verifix-ни янада яхшилашга ёрдам беради.',
+    surveyTitle: '5 дақиқа вақтингизни ажратганингиз учун раҳмат',
+    intro: 'Биз Verifix-да нима яхши ишлаётганини ва нимани яхшилаш мумкинлигини тушунмоқчимиз. Ҳар бир жавобни жамоа шахсан ўқийди. Муҳокама қилишни истасангиз — менежер боғланади.',
+    introNote: '~5 дақиқа · жавобларингиз ҳимояланган',
     start: 'Бошлаш',
     back: 'Орқага',
     next: 'Кейинги',
@@ -136,10 +140,10 @@ const UI = {
   },
   uz_lat: {
     selectLangHeading: 'Boshlash uchun tilni tanlang',
-    selectLangBody: 'Soʻrovnoma taxminan 10 daqiqa davom etadi. Ochiq javob bering — bu Verifix-ni yanada yaxshilashga yordam beradi.',
-    surveyTitle: 'Mahsulot va xizmat haqida fikringiz',
-    intro: 'Soʻrovnoma taxminan 10 daqiqa davom etadi. Har bir javobni shaxsan oʻqib, Verifix-ni rivojlantirish uchun foydalanamiz.',
-    introNote: 'Kompaniya nomi, F.I.SH. va telefon raqami majburiy — menejer Siz bilan bogʻlanishi uchun kerak.',
+    selectLangBody: 'Soʻrovnoma taxminan 5 daqiqa davom etadi. Ochiq javob bering — bu Verifix-ni yanada yaxshilashga yordam beradi.',
+    surveyTitle: '5 daqiqa vaqtingizni ajratganingiz uchun rahmat',
+    intro: 'Biz Verifix-da nima yaxshi ishlayotganini va nimani yaxshilash mumkinligini tushunmoqchimiz. Har bir javobni jamoa shaxsan oʻqiydi. Muhokama qilishni istasangiz — menejer bogʻlanadi.',
+    introNote: '~5 daqiqa · javoblaringiz himoyalangan',
     start: 'Boshlash',
     back: 'Orqaga',
     next: 'Keyingi',
@@ -401,23 +405,28 @@ function render(opts = {}) {
 
   const onQuestion = state.cursor !== 'intro' && state.cursor !== 'thanks';
 
-  // Progress bar (top of main)
+  // Progress bar (top of main + mirror in sidebar for mobile)
+  const sideProgress = document.getElementById('sideProgress');
+  const sideProgressFill = document.getElementById('sideProgressFill');
   if (onQuestion) {
     const list = visibleQuestions();
     const idx = list.findIndex((q) => q.key === state.cursor);
     if (idx < 0) {
-      // cursor got lost — bail to first visible
       state.cursor = list.length ? list[0].key : 'thanks';
       return render({ scrollTop: true });
     }
-    // Counter shows stable max (no shrinking). Progress % by visible position.
     const pct = Math.round(((idx + 1) / list.length) * 100);
     progressTop.hidden = false;
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressMeta').textContent =
       ui.questionOf(idx + 1, Math.max(MAX_QUESTIONS, list.length)) + ' · ' + pct + '%';
+    if (sideProgress) {
+      sideProgress.hidden = false;
+      sideProgressFill.style.width = pct + '%';
+    }
   } else {
     progressTop.hidden = true;
+    if (sideProgress) sideProgress.hidden = true;
   }
 
   // Action bar — hidden on thanks, back hidden on intro & very first question
@@ -505,7 +514,6 @@ function renderSidebar() {
 function renderIntro() {
   const ui = state.lang ? UI[state.lang] : UI.ru;
   if (!state.lang) {
-    // Need language first — repeat CTA
     return `
       <h1 class="q-head">${escapeHtml(UI.ru.selectLangHeading)} · ${escapeHtml(UI.uz_cyr.selectLangHeading)} · ${escapeHtml(UI.uz_lat.selectLangHeading)}</h1>
       <p class="q-body-text">${escapeHtml(UI.ru.selectLangBody)}</p>
@@ -514,9 +522,9 @@ function renderIntro() {
       <p class="q-hint">← ${escapeHtml(UI.ru.selectLangHeading)}</p>`;
   }
   return `
-    <h1 class="q-head">${escapeHtml(ui.surveyTitle)}</h1>
-    <p class="q-body-text">${escapeHtml(ui.intro)}</p>
-    <p class="q-body-text">${escapeHtml(ui.introNote)}</p>`;
+    <h1 class="q-head welcome-head">${escapeHtml(ui.surveyTitle)}</h1>
+    <p class="q-body-text welcome-body">${escapeHtml(ui.intro)}</p>
+    <p class="welcome-foot">${escapeHtml(ui.introNote)}</p>`;
 }
 
 function renderThanks() {
@@ -558,7 +566,9 @@ function renderQuestion(q) {
     body = renderSelect(q, state.identity[q.key] || '', 'data-identity-select');
   } else if (isIdentity) {
     const v = escapeAttr(state.identity[q.key] || '');
-    const ph = q.key === 'company_name' ? ui.companyPlaceholder : ui.inputPlaceholder;
+    const ph = (q.config && q.config.placeholder && typeof q.config.placeholder === 'object')
+      ? t(q.config.placeholder)
+      : (q.key === 'company_name' ? ui.companyPlaceholder : ui.inputPlaceholder);
     body = `<input type="text" class="text-input" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ph)}" />`;
   } else if (q.type === 'short_text') {
     const customPh = q.config && q.config.placeholder ? t(q.config.placeholder) : ui.inputPlaceholder;

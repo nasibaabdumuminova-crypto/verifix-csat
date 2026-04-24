@@ -21,7 +21,13 @@
     "help_text": null,
     "type": "short_text",
     "required": true,
-    "config": null,
+    "config": {
+      "placeholder": {
+        "ru": "Например, ООО «Ромашка Трейд»",
+        "uz_cyr": "Масалан, «Ромашка Трейд» МЧЖ",
+        "uz_lat": "Masalan, «Romashka Trade» MChJ"
+      }
+    },
     "show_if": null
   },
   {
@@ -45,7 +51,13 @@
     },
     "type": "short_text",
     "required": true,
-    "config": null,
+    "config": {
+      "placeholder": {
+        "ru": "Например, Иван Петров",
+        "uz_cyr": "Масалан, Иван Петров",
+        "uz_lat": "Masalan, Ivan Petrov"
+      }
+    },
     "show_if": null
   },
   {
@@ -68,7 +80,7 @@
       "uz_lat": "Roʻyxatdan tanlang. Agar lavozimingiz boʻlmasa — «Boshqa» ni tanlab, oʻz variantingizni koʻrsating."
     },
     "type": "select",
-    "required": true,
+    "required": false,
     "config": {
       "options_ru": [
         "Владелец / Founder",
@@ -459,7 +471,13 @@
     },
     "type": "long_text",
     "required": false,
-    "config": null,
+    "config": {
+      "placeholder": {
+        "ru": "Например: экономит 10 часов бухгалтеру в неделю",
+        "uz_cyr": "Масалан: бухгалтерга ҳафтасига 10 соат тежайди",
+        "uz_lat": "Masalan: buxgalterga haftasiga 10 soat tejaydi"
+      }
+    },
     "show_if": null
   },
   {
@@ -539,7 +557,13 @@
     },
     "type": "long_text",
     "required": true,
-    "config": null,
+    "config": {
+      "placeholder": {
+        "ru": "Например: автоматизация учёта в 25 магазинах",
+        "uz_cyr": "Масалан: 25 та дўконда ҳисобни автоматлаштириш",
+        "uz_lat": "Masalan: 25 ta doʻkonda hisobni avtomatlashtirish"
+      }
+    },
     "show_if": null
   },
   {
@@ -980,7 +1004,12 @@
     "required": true,
     "config": {
       "min_length": 3,
-      "max_length": 1000
+      "max_length": 1000,
+      "placeholder": {
+        "ru": "Например: интеграция с 1С, экспорт в Excel",
+        "uz_cyr": "Масалан: 1С билан интеграция, Excel-га экспорт",
+        "uz_lat": "Masalan: 1C bilan integratsiya, Excelga eksport"
+      }
     },
     "show_if": null
   },
