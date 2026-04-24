@@ -1178,30 +1178,6 @@
     "show_if": null
   },
   {
-    "key": "retention_reason",
-    "step_number": 6,
-    "step_title": {
-      "ru": "Будущее сотрудничества",
-      "uz_cyr": "Ҳамкорлик келажаги",
-      "uz_lat": "Hamkorlik kelajagi"
-    },
-    "position": 2,
-    "title": {
-      "ru": "Что для Вас критически важно, чтобы мы сохранили и развивали в Verifix?",
-      "uz_cyr": "Verifix-да нимани сақлаб қолиш ва ривожлантириш Сиз учун жуда муҳим?",
-      "uz_lat": "Verifix-da nimani saqlab qolish va rivojlantirish Siz uchun juda muhim?"
-    },
-    "help_text": {
-      "ru": "Что именно Вас удерживает в продукте?",
-      "uz_cyr": "Маҳсулотда Сизни айнан нима ушлаб турибди?",
-      "uz_lat": "Mahsulotda Sizni aynan nima ushlab turibdi?"
-    },
-    "type": "long_text",
-    "required": true,
-    "config": null,
-    "show_if": null
-  },
-  {
     "key": "headcount_plans",
     "step_number": 6,
     "step_title": {

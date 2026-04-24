@@ -1182,6 +1182,42 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   font-weight: 700;
 }
 
+/* ===== THANKS BLOCK (v10) ===== */
+.thanks-block {
+  text-align: center;
+  padding: clamp(16px, 3vw, 40px) 0;
+}
+.thanks-check {
+  font-size: clamp(52px, 8vw, 88px);
+  line-height: 1;
+  color: var(--c-success);
+  margin-bottom: clamp(12px, 2vw, 20px);
+  text-shadow: 0 0 30px rgba(74, 222, 128, 0.45);
+}
+.thanks-block .screen-title { text-align: center; }
+.thanks-block .subtitle {
+  text-align: center;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.thanks-actions {
+  margin-top: clamp(20px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.thanks-actions .btn-primary,
+.thanks-actions .btn-ghost {
+  width: 100%;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
 .step-help {
   color: var(--c-muted);
   font-size: clamp(15px, 1.5vw, 22px);

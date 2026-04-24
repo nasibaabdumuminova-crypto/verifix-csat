@@ -893,7 +893,215 @@ textarea.text-input { resize: vertical; min-height: 70px; }
 }
 .dist-n { color: var(--c-muted); font-size: 12px; text-align: right; }
 
-/* Responses list */
+/* === Dashboard section headers & grid variants === */
+.dash-section {
+  margin: clamp(18px, 2.2vw, 32px) 0 clamp(10px, 1.2vw, 16px);
+  font-size: clamp(13px, 1.05vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.dash-section:first-of-type { margin-top: 0; }
+.stats-grid.stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1100px) { .stats-grid.stats-grid-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .stats-grid.stats-grid-3 { grid-template-columns: 1fr; } }
+
+.wide-card { grid-column: span 2; }
+@media (max-width: 1100px) { .wide-card { grid-column: span 2; } }
+@media (max-width: 640px)  { .wide-card { grid-column: span 1; } }
+
+.stat-sub {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--c-muted);
+  opacity: 0.85;
+}
+
+/* === 1–5 Scale cards with colour-zoned histogram bar === */
+.scale-card .scale-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.scale-card .scale-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--c-muted);
+  flex-wrap: wrap;
+}
+.scale-card .scale-legend .dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px;
+}
+.scale-card .scale-legend .dot.det { background: #ff6b8a; }
+.scale-card .scale-legend .dot.neu { background: #ffd84a; }
+.scale-card .scale-legend .dot.pro { background: #4ade80; }
+
+/* === Responses table === */
+.resp-toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 14px 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.resp-toolbar .text-input {
+  flex: 1 1 240px;
+  min-width: 0;
+  margin: 0;
+}
+.resp-toolbar select.text-input { max-width: 220px; }
+
+.col-menu, .export-menu { position: relative; }
+.col-dropdown, .export-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #2a2560;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 8px;
+  min-width: 180px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.col-dropdown label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.col-dropdown label:hover { background: rgba(255, 255, 255, 0.06); }
+.export-dropdown button {
+  background: transparent;
+  border: 0;
+  color: var(--c-text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.export-dropdown button:hover { background: rgba(255, 255, 255, 0.08); }
+
+.resp-table-wrap {
+  background: var(--c-card);
+  border: 1px solid var(--c-card-border);
+  border-radius: 16px;
+  overflow: auto;
+  max-height: 70vh;
+  backdrop-filter: blur(20px);
+}
+.resp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.resp-table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(42, 37, 96, 0.98);
+  text-align: left;
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 1;
+}
+.resp-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: top;
+}
+.resp-row:hover td { background: rgba(255, 255, 255, 0.04); }
+.resp-table td.col-expand { width: 40px; text-align: center; }
+.resp-table .btn-expand { padding: 4px 8px; min-height: auto; }
+.resp-detail td {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 14px 20px !important;
+}
+.resp-detail .a-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 8px 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 14px;
+}
+
+.urg {
+  font-size: 18px;
+  display: inline-block;
+  width: 24px;
+  text-align: center;
+  line-height: 1;
+  cursor: help;
+}
+.score {
+  display: inline-block;
+  min-width: 28px;
+  padding: 3px 8px;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.score-det { background: rgba(255, 107, 138, 0.2); color: #ffb0be; }
+.score-neu { background: rgba(255, 216, 74, 0.2); color: #f5d668; }
+.score-pro { background: rgba(74, 222, 128, 0.2); color: #7fe4a0; }
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+
+/* === Print stylesheet — used for "Export PDF via browser print" === */
+@media print {
+  body.page-admin {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .bg-glow, #starfield, .dash-header, .tabs, .resp-toolbar, .export-menu,
+  .col-menu, .btn-expand, .col-expand, #addQuestionBtn, .q-row-actions {
+    display: none !important;
+  }
+  .tab-panel[hidden] { display: none !important; }
+  .tab-panel { display: block !important; }
+  .stat-card, .resp-table-wrap {
+    background: #fff !important;
+    border: 1px solid #ddd !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    break-inside: avoid;
+  }
+  .stat-label, .muted, .stat-sub { color: #555 !important; }
+  .stat-value { color: #111 !important; -webkit-text-fill-color: #111 !important; }
+  .dash-section { color: #333 !important; border-color: #ccc !important; }
+  .resp-table thead th { background: #f3f3f3 !important; color: #333 !important; }
+  .resp-table tbody td { border-color: #eee !important; }
+  .resp-detail { display: none; }  /* collapsed detail rows don't print */
+}
+
+/* Responses list (legacy styles kept for /admin reviews page) */
 .filters { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .filters .text-input { margin: 0; }
 .resp-list { max-height: 70vh; overflow: auto; }

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=11" />
+<link rel="stylesheet" href="/style.css?v=14" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -33,7 +33,14 @@
       </div>
       <div class="dash-actions">
         <a href="/admin" class="btn-ghost">→ NPS Radar</a>
-        <a href="#" id="exportBtn" class="btn-ghost">Экспорт CSV</a>
+        <div class="export-menu">
+          <button class="btn-ghost" id="exportToggle" aria-haspopup="true" aria-expanded="false">Экспорт ▾</button>
+          <div class="export-dropdown" id="exportDropdown" hidden>
+            <button type="button" data-export="csv">CSV</button>
+            <button type="button" data-export="xls">Excel (.xls)</button>
+            <button type="button" data-export="pdf">PDF (печать)</button>
+          </div>
+        </div>
         <button id="logout" class="btn-ghost">Выйти</button>
       </div>
     </header>
@@ -46,80 +53,142 @@
 
     <!-- ============ STATS ============ -->
     <section class="tab-panel" data-panel="stats">
-      <div class="stats-grid">
+
+      <h3 class="dash-section">Обзор</h3>
+      <div class="stats-grid stats-grid-3">
         <div class="stat-card">
           <div class="stat-label">Всего ответов</div>
           <div class="stat-value" id="s_total">—</div>
           <div id="s_lang" class="lang-breakdown muted"></div>
+          <div class="stat-sub muted">Все заполненные анкеты по всем версиям опросника.</div>
         </div>
-        <div class="stat-card nps-card">
-          <div class="stat-label">NPS</div>
+        <div class="stat-card nps-card wide-card">
+          <div class="stat-label">NPS (4.3)</div>
           <div class="stat-value" id="s_nps">—</div>
           <div class="nps-bar" id="s_npsBar"></div>
           <div class="nps-legend" id="s_npsLegend"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">CSAT продукт</div>
-          <div class="stat-value" id="s_csatP">—</div>
-          <div class="muted">шкала 1–5</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Веб-интерфейс</div>
-          <div class="stat-value" id="s_webUx">—</div>
-          <div class="muted">шкала 1–5</div>
+          <div class="stat-sub muted">Шкала 0–10. <b>NPS</b> = %промоутеров − %детракторов. Промоутеры: 9–10, нейтралы: 7–8, детракторы: 0–6.</div>
         </div>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Мобильное приложение</div>
-          <div class="stat-value" id="s_mobile">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Поддержка</div>
-          <div class="stat-value" id="s_support">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Менеджер (200+ компаний)</div>
-          <div class="stat-value" id="s_mgr">—</div>
-        </div>
-      </div>
-
+      <h3 class="dash-section">Лояльность и намерения</h3>
       <div class="stats-grid dist-grid">
-        <div class="stat-card dist-card">
-          <div class="stat-label">Окупаемость (4.2)</div>
-          <div id="s_dist_roi" class="dist-list"></div>
-        </div>
         <div class="stat-card dist-card">
           <div class="stat-label">Намерение продлить (6.1)</div>
           <div id="s_dist_renewal" class="dist-list"></div>
+          <div class="stat-sub muted">Планирует ли клиент продлевать контракт на новый период.</div>
         </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Готовность рекомендовать (6.4)</div>
+          <div id="s_dist_reference" class="dist-list"></div>
+          <div class="stat-sub muted">Согласие клиента на публичный отзыв — сигнал сильной лояльности.</div>
+        </div>
+      </div>
+
+      <h3 class="dash-section">Продукт</h3>
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card scale-card" data-scale="csat_product">
+          <div class="stat-label">CSAT продукт (4.8)</div>
+          <div class="stat-value" data-scale-avg>—</div>
+          <div class="scale-bar" data-scale-bar></div>
+          <div class="scale-legend" data-scale-legend></div>
+          <div class="stat-sub muted">Общее удовлетворение продуктом. Шкала 1–5: низкие оценки (1–2) = риск.</div>
+        </div>
+        <div class="stat-card scale-card" data-scale="web_ux_score">
+          <div class="stat-label">Веб-интерфейс (5.1)</div>
+          <div class="stat-value" data-scale-avg>—</div>
+          <div class="scale-bar" data-scale-bar></div>
+          <div class="scale-legend" data-scale-legend></div>
+          <div class="stat-sub muted">Удобство веб-версии. Низкие оценки — приоритет для UX-команды.</div>
+        </div>
+        <div class="stat-card scale-card" data-scale="mobile_ux_score">
+          <div class="stat-label">Мобильное приложение (5.4)</div>
+          <div class="stat-value" data-scale-avg>—</div>
+          <div class="scale-bar" data-scale-bar></div>
+          <div class="scale-legend" data-scale-legend></div>
+          <div class="stat-sub muted">Только те, кто пользуется мобильным приложением (ветвление по 5.3).</div>
+        </div>
+      </div>
+
+      <h3 class="dash-section">Сервис и поддержка</h3>
+      <div class="stats-grid stats-grid-3">
+        <div class="stat-card scale-card" data-scale="support_score">
+          <div class="stat-label">Поддержка (5.7)</div>
+          <div class="stat-value" data-scale-avg>—</div>
+          <div class="scale-bar" data-scale-bar></div>
+          <div class="scale-legend" data-scale-legend></div>
+          <div class="stat-sub muted">Качество технической поддержки. Оценки 1–2 — эскалировать.</div>
+        </div>
+        <div class="stat-card scale-card" data-scale="manager_score">
+          <div class="stat-label">Менеджер (5.9)</div>
+          <div class="stat-value" data-scale-avg>—</div>
+          <div class="scale-bar" data-scale-bar></div>
+          <div class="scale-legend" data-scale-legend></div>
+          <div class="stat-sub muted">Только клиенты 200+ сотрудников (ветвление по 2.2).</div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Пользуются мобильной версией (5.3)</div>
+          <div id="s_dist_mobile" class="dist-list"></div>
+          <div class="stat-sub muted">Определяет видимость оценки мобильного приложения.</div>
+        </div>
+      </div>
+
+      <h3 class="dash-section">Бизнес-контекст</h3>
+      <div class="stats-grid dist-grid">
         <div class="stat-card dist-card">
           <div class="stat-label">Отрасль (2.1)</div>
           <div id="s_dist_industry" class="dist-list"></div>
+          <div class="stat-sub muted">Сегментация ответов по индустриям клиентов.</div>
         </div>
         <div class="stat-card dist-card">
           <div class="stat-label">Размер компании (2.2)</div>
           <div id="s_dist_size" class="dist-list"></div>
+          <div class="stat-sub muted">Клиенты 200+ сотрудников получают доп. вопрос про менеджера.</div>
         </div>
         <div class="stat-card dist-card">
-          <div class="stat-label">Мобильное приложение (5.3)</div>
-          <div id="s_dist_mobile" class="dist-list"></div>
+          <div class="stat-label">Окупаемость (4.2)</div>
+          <div id="s_dist_roi" class="dist-list"></div>
+          <div class="stat-sub muted">Самооценка клиентом ROI от использования Verifix.</div>
         </div>
+      </div>
+
+      <h3 class="dash-section">Действия и планы</h3>
+      <div class="stats-grid dist-grid">
         <div class="stat-card dist-card">
           <div class="stat-label">Запрос звонка менеджера (6.6)</div>
           <div id="s_dist_callback" class="dist-list"></div>
+          <div class="stat-sub muted">«Да» здесь — высший приоритет для отдела успеха клиента.</div>
+        </div>
+        <div class="stat-card dist-card">
+          <div class="stat-label">Планы по штату (6.3)</div>
+          <div id="s_dist_headcount" class="dist-list"></div>
+          <div class="stat-sub muted">Рост штата клиента — потенциал расширения контракта.</div>
         </div>
       </div>
+
     </section>
 
     <!-- ============ RESPONSES ============ -->
     <section class="tab-panel" data-panel="responses" hidden>
-      <div class="table-wrap">
-        <div class="filters">
-          <input type="text" id="respFilter" class="text-input" placeholder="Фильтр по компании / ФИО / email…" />
+      <div class="resp-toolbar">
+        <input type="text" id="respFilter" class="text-input" placeholder="Фильтр: компания / ФИО / телефон…" />
+        <select id="respUrgency" class="text-input" aria-label="Фильтр по срочности">
+          <option value="">Все срочности</option>
+          <option value="high">🔴 Срочно</option>
+          <option value="medium">🟡 Обратить внимание</option>
+          <option value="low">🟢 Норма</option>
+        </select>
+        <div class="col-menu">
+          <button type="button" class="btn-ghost" id="colToggle" aria-haspopup="true">Столбцы ▾</button>
+          <div class="col-dropdown" id="colDropdown" hidden></div>
         </div>
-        <div id="respList" class="resp-list"></div>
+      </div>
+      <div class="resp-table-wrap">
+        <table class="resp-table" id="respTable">
+          <thead id="respHead"></thead>
+          <tbody id="respBody"></tbody>
+        </table>
+        <div id="respEmpty" class="empty" hidden>Пока нет ответов</div>
       </div>
     </section>
 
@@ -279,28 +348,23 @@ async function loadAll() {
 function renderStats() {
   const s = state.stats;
   if (!s) return;
-  const fmt = (v) => v == null ? '—' : v;
   document.getElementById('s_total').textContent = s.totalResponses;
   document.getElementById('s_nps').textContent = s.nps.score == null ? '—' : s.nps.score;
-  document.getElementById('s_csatP').textContent = fmt(s.csatProduct);
-  document.getElementById('s_webUx').textContent = fmt(s.scales.web_ux_score);
-  document.getElementById('s_mobile').textContent = fmt(s.scales.mobile_ux_score);
-  document.getElementById('s_support').textContent = fmt(s.scales.support_score);
-  document.getElementById('s_mgr').textContent = fmt(s.scales.manager_score);
 
   // Language breakdown
   const ld = s.languageDistribution || {};
   const langSummary = Object.keys(ld).map((k) => `${LANG_NAMES[k] || k}: ${ld[k]}`).join(' · ');
   document.getElementById('s_lang').textContent = langSummary;
 
+  // NPS colour bar (0-6 det, 7-8 neu, 9-10 pro)
   const total = s.nps.count || 1;
   const pPct = s.nps.promoters / total * 100;
   const nPct = s.nps.neutrals / total * 100;
   const dPct = s.nps.detractors / total * 100;
   document.getElementById('s_npsBar').innerHTML = `
-    <div class="bar-seg bar-det" style="width:${dPct}%"></div>
-    <div class="bar-seg bar-neu" style="width:${nPct}%"></div>
-    <div class="bar-seg bar-pro" style="width:${pPct}%"></div>
+    <div class="bar-seg bar-det" style="width:${dPct}%" title="Детракторы 0–6"></div>
+    <div class="bar-seg bar-neu" style="width:${nPct}%" title="Нейтралы 7–8"></div>
+    <div class="bar-seg bar-pro" style="width:${pPct}%" title="Промоутеры 9–10"></div>
   `;
   document.getElementById('s_npsLegend').innerHTML = `
     <span><i class="dot det"></i>Детракторы: ${s.nps.detractors}</span>
@@ -308,24 +372,71 @@ function renderStats() {
     <span><i class="dot pro"></i>Промоутеры: ${s.nps.promoters}</span>
   `;
 
+  // 1–5 scale cards: avg + colour-zoned histogram bar
+  const scaleMap = {
+    csat_product: s.csatProduct,
+    web_ux_score: s.scales.web_ux_score,
+    mobile_ux_score: s.scales.mobile_ux_score,
+    support_score: s.scales.support_score,
+    manager_score: s.scales.manager_score,
+  };
+  document.querySelectorAll('.scale-card').forEach((card) => {
+    const key = card.dataset.scale;
+    const b = scaleMap[key];
+    renderScaleCard(card, b);
+  });
+
+  // Categorical distributions
   fillDist('s_dist_roi', s.distributions.roi_category);
   fillDist('s_dist_renewal', s.distributions.renewal_intent);
+  fillDist('s_dist_reference', s.distributions.reference_willingness);
   fillDist('s_dist_industry', s.distributions.industry);
   fillDist('s_dist_size', s.distributions.company_size);
   fillDist('s_dist_mobile', s.distributions.mobile_usage);
   fillDist('s_dist_callback', s.distributions.callback_request);
+  fillDist('s_dist_headcount', s.distributions.headcount_plans);
+}
+
+// Render a 1–5 scale card: big average + histogram bar with red/yellow/green
+// zones (1–2 detractors / 3 neutral / 4–5 promoters) that mirrors the NPS look.
+function renderScaleCard(card, breakdown) {
+  const avgEl = card.querySelector('[data-scale-avg]');
+  const barEl = card.querySelector('[data-scale-bar]');
+  const legEl = card.querySelector('[data-scale-legend]');
+  if (!breakdown || !breakdown.count) {
+    avgEl.textContent = '—';
+    barEl.innerHTML = '';
+    legEl.innerHTML = '<span class="muted">Нет ответов</span>';
+    return;
+  }
+  avgEl.textContent = breakdown.avg == null ? '—' : breakdown.avg;
+  const t = breakdown.count;
+  const dPct = breakdown.detractors / t * 100;
+  const nPct = breakdown.neutrals  / t * 100;
+  const pPct = breakdown.promoters / t * 100;
+  barEl.innerHTML = `
+    <div class="bar-seg bar-det" style="width:${dPct}%" title="Оценки 1–2"></div>
+    <div class="bar-seg bar-neu" style="width:${nPct}%" title="Оценка 3"></div>
+    <div class="bar-seg bar-pro" style="width:${pPct}%" title="Оценки 4–5"></div>`;
+  legEl.innerHTML = `
+    <span><i class="dot det"></i>1–2: ${breakdown.detractors}</span>
+    <span><i class="dot neu"></i>3: ${breakdown.neutrals}</span>
+    <span><i class="dot pro"></i>4–5: ${breakdown.promoters}</span>
+    <span class="muted">n=${breakdown.count}</span>`;
 }
 
 function fillDist(id, dist) {
   const el = document.getElementById(id);
+  if (!el) return;
   const entries = Object.entries(dist || {}).sort((a, b) => b[1] - a[1]);
   const total = entries.reduce((s, [, n]) => s + n, 0);
   if (!total) { el.innerHTML = '<div class="muted">Нет данных</div>'; return; }
   el.innerHTML = entries.map(([k, n]) => {
     const pct = Math.round(n / total * 100);
+    const label = /\uFFFD|^\s*$/.test(k) ? '<span class="muted">(данные повреждены)</span>' : escapeHtml(k);
     return `
       <div class="dist-row">
-        <div class="dist-label">${escapeHtml(k)}</div>
+        <div class="dist-label">${label}</div>
         <div class="dist-bar"><div class="dist-fill" style="width:${pct}%"></div></div>
         <div class="dist-n">${n} · ${pct}%</div>
       </div>`;
@@ -333,47 +444,201 @@ function fillDist(id, dist) {
 }
 
 // ========== RESPONSES ==========
+// Table columns — id, label, default visibility. User can toggle; we
+// persist their choice in localStorage so it survives reloads.
+const COLUMNS = [
+  { id: 'urgency',  label: 'Срочность',  default: true  },
+  { id: 'company',  label: 'Компания',   default: true  },
+  { id: 'contact',  label: 'ФИО',        default: true  },
+  { id: 'phone',    label: 'Телефон',    default: true  },
+  { id: 'position', label: 'Должность',  default: false },
+  { id: 'nps',      label: 'NPS',        default: true  },
+  { id: 'csat',     label: 'CSAT',       default: true  },
+  { id: 'support',  label: 'Поддержка',  default: true  },
+  { id: 'renewal',  label: 'Продление',  default: false },
+  { id: 'callback', label: 'Звонок',     default: false },
+  { id: 'lang',     label: 'Язык',       default: false },
+  { id: 'date',     label: 'Дата',       default: true  },
+];
+const COL_STORAGE_KEY = 'verifix_admin_cols_v1';
+function loadVisibleCols() {
+  try {
+    const raw = localStorage.getItem(COL_STORAGE_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch (_) {}
+  return new Set(COLUMNS.filter((c) => c.default).map((c) => c.id));
+}
+function saveVisibleCols(set) {
+  try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify([...set])); } catch (_) {}
+}
+let visibleCols = loadVisibleCols();
+
+// Urgency classifier: returns 'high' | 'medium' | 'low'. High = immediate
+// callback warranted (explicit callback request, detractor NPS, very low
+// support/csat, intent not to renew). Medium = one yellow flag. Low = fine.
+function urgencyOf(r) {
+  const a = Object.fromEntries(r.answers.map((x) => [x.question_key, x.value]));
+  const n = (k) => { const v = Number(a[k]); return Number.isFinite(v) ? v : null; };
+  const nps = n('nps');
+  const csat = n('csat_product');
+  const support = n('support_score');
+  const web = n('web_ux_score');
+  const mobile = n('mobile_ux_score');
+  const manager = n('manager_score');
+  const callbackYes = /^(да|yes|ha|ҳа)$/i.test(String(a.callback_request || '').trim());
+  const renewal = String(a.renewal_intent || '').toLowerCase();
+  const wantsOut = renewal.includes('точно нет') || renewal.includes('албатта йўқ') || renewal.includes('albatta yo');
+  const maybeOut = renewal.includes('скорее нет') || renewal.includes('кўпроқ йўқ') || renewal.includes('koʻproq yo');
+
+  // High-priority: any of these means "contact this client today"
+  if (callbackYes || wantsOut ||
+      (nps !== null && nps <= 3) ||
+      (csat !== null && csat <= 1) ||
+      (support !== null && support <= 1)) return 'high';
+
+  // Medium: detractor NPS or low single score somewhere
+  if ((nps !== null && nps <= 6) || maybeOut ||
+      (csat !== null && csat <= 2) ||
+      (support !== null && support <= 2) ||
+      (web !== null && web <= 2) ||
+      (mobile !== null && mobile <= 2) ||
+      (manager !== null && manager <= 2)) return 'medium';
+
+  return 'low';
+}
+const URGENCY_META = {
+  high:   { dot: '🔴', title: 'Срочно — связаться в первую очередь' },
+  medium: { dot: '🟡', title: 'Обратить внимание — одна или несколько низких оценок' },
+  low:    { dot: '🟢', title: 'Норма — без красных флагов' },
+};
+
 const respFilter = document.getElementById('respFilter');
+const respUrgencyFilter = document.getElementById('respUrgency');
 respFilter.addEventListener('input', renderResponses);
+respUrgencyFilter.addEventListener('change', renderResponses);
+
+// Build the column-visibility dropdown once.
+(function buildColMenu() {
+  const dd = document.getElementById('colDropdown');
+  const toggle = document.getElementById('colToggle');
+  dd.innerHTML = COLUMNS.map((c) => `
+    <label><input type="checkbox" data-col="${c.id}" ${visibleCols.has(c.id) ? 'checked' : ''} /> ${escapeHtml(c.label)}</label>
+  `).join('');
+  dd.addEventListener('change', (e) => {
+    const id = e.target.dataset.col;
+    if (!id) return;
+    if (e.target.checked) visibleCols.add(id); else visibleCols.delete(id);
+    saveVisibleCols(visibleCols);
+    renderResponses();
+  });
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dd.hidden = !dd.hidden;
+    toggle.setAttribute('aria-expanded', dd.hidden ? 'false' : 'true');
+  });
+  document.addEventListener('click', (e) => {
+    if (!dd.contains(e.target) && e.target !== toggle) dd.hidden = true;
+  });
+})();
 
 function renderResponses() {
   const f = (respFilter.value || '').toLowerCase().trim();
-  const list = state.responses.filter((r) =>
-    !f || r.company_name.toLowerCase().includes(f) ||
-    (r.contact_name || '').toLowerCase().includes(f) ||
-    (r.phone || '').toLowerCase().includes(f)
-  );
-  const el = document.getElementById('respList');
-  if (!list.length) { el.innerHTML = '<div class="empty">Пока нет ответов</div>'; return; }
+  const urg = respUrgencyFilter.value;
+  const qByKey = new Map((state.responsesQuestions || []).map((q) => [q.key, q]));
 
-  const qByKey = new Map(state.responsesQuestions.map((q) => [q.key, q]));
+  // Annotate each response with urgency + quick-lookup answers — once, not per cell
+  const enriched = state.responses.map((r) => {
+    const a = Object.fromEntries(r.answers.map((x) => [x.question_key, x.value]));
+    return { r, a, u: urgencyOf(r) };
+  });
 
-  el.innerHTML = list.map((r) => {
-    const d = new Date(r.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' });
-    const langBadge = LANG_NAMES[r.language] || r.language || 'ru';
-    const answers = r.answers.map((a) => {
-      const q = qByKey.get(a.question_key);
-      const title = q ? tr(q.title, 'ru') : a.question_key;
-      const v = Array.isArray(a.value)
-        ? a.value.join(', ')
-        : (a.value === null || a.value === undefined ? '—' : String(a.value));
+  const list = enriched.filter(({ r, u }) => {
+    if (urg && u !== urg) return false;
+    if (!f) return true;
+    return (r.company_name || '').toLowerCase().includes(f) ||
+           (r.contact_name || '').toLowerCase().includes(f) ||
+           (r.phone || '').toLowerCase().includes(f);
+  });
+
+  // Sort by urgency (high → medium → low), then newest first
+  const urgOrder = { high: 0, medium: 1, low: 2 };
+  list.sort((x, y) => urgOrder[x.u] - urgOrder[y.u] ||
+                      new Date(y.r.created_at) - new Date(x.r.created_at));
+
+  const head = document.getElementById('respHead');
+  const body = document.getElementById('respBody');
+  const empty = document.getElementById('respEmpty');
+
+  const activeCols = COLUMNS.filter((c) => visibleCols.has(c.id));
+  head.innerHTML = '<tr>' + activeCols.map((c) => `<th>${escapeHtml(c.label)}</th>`).join('') + '<th></th></tr>';
+
+  if (!list.length) { body.innerHTML = ''; empty.hidden = false; return; }
+  empty.hidden = true;
+
+  const cellFor = (col, ctx) => {
+    const { r, a, u } = ctx;
+    switch (col) {
+      case 'urgency': {
+        const m = URGENCY_META[u];
+        return `<span class="urg urg-${u}" title="${escapeAttr(m.title)}">${m.dot}</span>`;
+      }
+      case 'company':  return `<strong>${escapeHtml(r.company_name || '')}</strong>`;
+      case 'contact':  return escapeHtml(r.contact_name || '—');
+      case 'phone':    return r.phone ? `<a href="tel:${escapeAttr(String(r.phone).replace(/\s+/g, ''))}">${escapeHtml(r.phone)}</a>` : '—';
+      case 'position': return escapeHtml(r.position || '—');
+      case 'nps':      return cellScore(a.nps, 0, 6);
+      case 'csat':     return cellScore(a.csat_product, 1, 2);
+      case 'support':  return cellScore(a.support_score, 1, 2);
+      case 'renewal':  return escapeHtml(a.renewal_intent || '—');
+      case 'callback': return a.callback_request ? escapeHtml(String(a.callback_request)) : '—';
+      case 'lang':     return escapeHtml(LANG_NAMES[r.language] || r.language || 'ru');
+      case 'date':     return `<span class="muted">${new Date(r.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</span>`;
+      default: return '';
+    }
+  };
+
+  body.innerHTML = list.map((ctx, i) => {
+    const row = '<tr class="resp-row" data-idx="' + i + '">' +
+      activeCols.map((c) => `<td>${cellFor(c.id, ctx)}</td>`).join('') +
+      '<td class="col-expand"><button type="button" class="btn-ghost btn-expand" data-idx="' + i + '">▼</button></td>' +
+      '</tr>';
+    // Expanded row with all answers (full detail). Hidden by default.
+    const answers = ctx.r.answers.map((an) => {
+      const q = qByKey.get(an.question_key);
+      const title = q ? tr(q.title, 'ru') : an.question_key;
+      const v = Array.isArray(an.value) ? an.value.join(', ')
+              : (an.value == null ? '—' : String(an.value));
       return `<div class="a-row"><div class="a-q">${escapeHtml(title)}</div><div class="a-v">${escapeHtml(v)}</div></div>`;
     }).join('');
-    return `
-      <details class="resp-item">
-        <summary>
-          <strong>${escapeHtml(r.company_name)}</strong>
-          ${r.contact_name ? `<span class="muted">· ${escapeHtml(r.contact_name)}</span>` : ''}
-          ${r.phone ? `<span class="muted">· ${escapeHtml(r.phone)}</span>` : ''}
-          <span class="lang-pill">${escapeHtml(langBadge)}</span>
-          <span class="muted resp-date">${d}</span>
-        </summary>
-        <div class="resp-body">
-          ${r.position ? `<div class="a-row"><div class="a-q">Должность</div><div class="a-v">${escapeHtml(r.position)}</div></div>` : ''}
-          ${answers}
-        </div>
-      </details>`;
+    const detail = '<tr class="resp-detail" data-detail="' + i + '" hidden><td colspan="' + (activeCols.length + 1) + '">' +
+      (ctx.r.position ? `<div class="a-row"><div class="a-q">Должность</div><div class="a-v">${escapeHtml(ctx.r.position)}</div></div>` : '') +
+      answers + '</td></tr>';
+    return row + detail;
   }).join('');
+
+  // Wire the expand toggles (delegated)
+  body.querySelectorAll('.btn-expand').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const i = btn.dataset.idx;
+      const row = body.querySelector(`tr.resp-detail[data-detail="${i}"]`);
+      if (row) {
+        row.hidden = !row.hidden;
+        btn.textContent = row.hidden ? '▼' : '▲';
+      }
+    });
+  });
+}
+
+// Colour-code a numeric score in the table — red if ≤ threshold, green if
+// high. `detMax` is the detractor upper bound (inclusive) for the scale.
+function cellScore(v, scaleMin, detMax) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '<span class="muted">—</span>';
+  let cls = 'score-pro';
+  if (n <= detMax) cls = 'score-det';
+  else if (n === (detMax + 1) || (scaleMin === 0 && n <= 8)) cls = 'score-neu';
+  return `<span class="score ${cls}">${n}</span>`;
+}
 }
 
 // ========== QUESTIONS EDITOR ==========
@@ -601,16 +866,38 @@ document.getElementById('modalForm').addEventListener('submit', async (e) => {
   await loadAll();
 });
 
-document.getElementById('exportBtn').addEventListener('click', async (e) => {
-  e.preventDefault();
-  const r = await authedFetch('/api/admin/survey/export.csv');
-  if (!r.ok) return alert('Не удалось экспортировать');
-  const blob = await r.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'verifix_survey.csv'; a.click();
-  URL.revokeObjectURL(url);
-});
+// Export menu: CSV / XLS from the server, PDF via window.print on the active tab.
+(function wireExportMenu() {
+  const toggle = document.getElementById('exportToggle');
+  const dd = document.getElementById('exportDropdown');
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dd.hidden = !dd.hidden;
+    toggle.setAttribute('aria-expanded', dd.hidden ? 'false' : 'true');
+  });
+  document.addEventListener('click', (e) => {
+    if (!dd.contains(e.target) && e.target !== toggle) dd.hidden = true;
+  });
+  dd.addEventListener('click', async (e) => {
+    const fmt = e.target.dataset.export;
+    if (!fmt) return;
+    dd.hidden = true;
+    if (fmt === 'pdf') {
+      // Browser's "Save as PDF" via print dialog. Our print stylesheet hides
+      // the header/tabs/exports so only the current tab content prints.
+      window.print();
+      return;
+    }
+    const ext = fmt === 'xls' ? 'xls' : 'csv';
+    const r = await authedFetch('/api/admin/survey/export.' + ext);
+    if (!r.ok) return alert('Не удалось экспортировать');
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'verifix_survey.' + ext; a.click();
+    URL.revokeObjectURL(url);
+  });
+})();
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
@@ -630,6 +917,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=11"></script>
+<script src="/stars.js?v=14"></script>
 </body>
 </html>
