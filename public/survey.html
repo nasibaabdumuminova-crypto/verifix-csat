@@ -553,15 +553,15 @@ function renderIntro() {
 
 function renderThanks() {
   const ui = UI[state.lang] || UI.ru;
+  // No action buttons on the final screen — clients should just close
+  // the tab. The old "Перейти на verifix.uz" / "Пройти опрос ещё раз"
+  // felt out of place (the first led off-site, the second invited them
+  // to re-submit, which we don't want).
   return `
     <div class="thanks-block">
       <div class="thanks-check">✓</div>
       <h1 class="q-head">${escapeHtml(ui.thanks)}</h1>
       <p class="q-body-text">${escapeHtml(ui.thanksBody)}</p>
-      <div class="thanks-actions">
-        <a class="btn-next" href="https://verifix.uz" target="_blank" rel="noopener">${escapeHtml(ui.goHome)}</a>
-        <button type="button" class="btn-back" id="restartBtn">${escapeHtml(ui.restart)}</button>
-      </div>
     </div>`;
 }
 

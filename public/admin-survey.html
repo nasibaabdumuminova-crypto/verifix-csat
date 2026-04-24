@@ -296,7 +296,9 @@ const dashboard = document.getElementById('dashboard');
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  password.value = document.getElementById('pwd').value;
+  // Trim client-side — password managers and browser auto-fill sometimes
+  // leave a trailing space on paste, and that has already locked out the operator.
+  password.value = (document.getElementById('pwd').value || '').trim();
   if (await loadAll()) {
     sessionStorage.setItem('csat_pwd', password.value);
     loginScreen.hidden = true;

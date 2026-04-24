@@ -76,7 +76,7 @@ let password = sessionStorage.getItem('csat_pwd') || '';
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  password = document.getElementById('pwd').value;
+  password = (document.getElementById('pwd').value || '').trim();
   const ok = await loadData();
   if (ok) {
     sessionStorage.setItem('csat_pwd', password);
