@@ -783,6 +783,7 @@ function sendHtmlNoCache(res, filename) {
   res.sendFile(path.join(__dirname, 'public', filename));
 }
 app.get('/survey',       (req, res) => sendHtmlNoCache(res, 'survey.html'));
+app.get('/v10',          (req, res) => sendHtmlNoCache(res, 'survey-v10.html'));
 app.get('/admin',        (req, res) => sendHtmlNoCache(res, 'admin.html'));
 app.get('/admin/survey', (req, res) => sendHtmlNoCache(res, 'admin-survey.html'));
 

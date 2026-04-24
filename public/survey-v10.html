@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verifix — Ваше мнение о продукте и сервисе</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style-v10.css?v=1" />
+</head>
+<body class="page-public page-survey page-survey-single">
+  <div class="bg-glow"></div>
+
+  <main class="card card-survey">
+    <div class="survey-top">
+      <div class="brand">
+        <img src="/logo.png" alt="Verifix" class="brand-mark" />
+        <div class="brand-name">Verifix</div>
+      </div>
+      <div id="langCorner" class="lang-corner" hidden>
+        <span class="lang-current" id="langCurrentLabel"></span>
+        <button type="button" class="btn-ghost lang-change" id="langChangeBtn">⇅</button>
+      </div>
+    </div>
+
+    <div id="progressWrap" class="progress progress-big" hidden>
+      <div class="progress-meta">
+        <span id="progressStep" class="progress-step"></span>
+        <span id="progressCount" class="progress-count"></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div id="screen" class="screen"></div>
+
+    <div id="navBar" class="form-nav" hidden>
+      <button type="button" id="backBtn" class="btn-ghost">Назад</button>
+      <button type="button" id="nextBtn" class="btn-primary">Далее</button>
+    </div>
+
+    <div id="message" class="message" aria-live="polite"></div>
+  </main>
+
+<script>
+/* ============================================================
+ *  Verifix survey v10 — one question per screen
+ * ============================================================ */
+const STORAGE_KEY = 'verifix_survey_draft_v10';
+const LANG_KEY = 'verifix_survey_lang';
+
+const UI = {
+  ru: {
+    selectLang: 'Выберите язык',
+    surveyTitle: 'Verifix — Ваше мнение о продукте и сервисе',
+    intro: 'Опрос займёт ~7 минут. Все ответы мы читаем лично и используем для развития Verifix.',
+    introNote: 'Название компании, ФИО и телефон обязательны — это нужно, чтобы менеджер мог с Вами связаться.',
+    start: 'Начать',
+    back: 'Назад',
+    next: 'Далее',
+    submit: 'Отправить',
+    sending: 'Отправляем…',
+    stepOf: (i, n) => `Шаг ${i} из ${n}`,
+    questionOf: (i, n) => `Вопрос ${i} из ${n}`,
+    required: 'Обязательно для заполнения',
+    fillField: 'Пожалуйста, заполните это поле',
+    invalidPhone: 'Введите корректный номер телефона',
+    fillRequired: 'Пожалуйста, ответьте на этот вопрос',
+    otherLabel: 'Другое',
+    otherPlaceholder: 'свой вариант',
+    inputPlaceholder: 'Введите ответ…',
+    selectPlaceholder: '— Выберите из списка',
+    thanks: 'Спасибо!',
+    thanksBody: 'Ваша обратная связь помогает нам делать Verifix лучше. Мы внимательно прочитаем каждый ответ и вернёмся к Вам с итогами.',
+  },
+  uz_cyr: {
+    selectLang: 'Тилни танланг',
+    surveyTitle: 'Verifix — маҳсулот ва хизмат ҳақида фикрингиз',
+    intro: 'Сўровнома ~7 дақиқа давом этади. Ҳар бир жавобни шахсан ўқиб, Verifix-ни ривожлантириш учун фойдаланамиз.',
+    introNote: 'Компания номи, Ф.И.Ш. ва телефон рақами мажбурий — менежер сиз билан боғланиши учун керак.',
+    start: 'Бошлаш',
+    back: 'Орқага',
+    next: 'Кейинги',
+    submit: 'Юбориш',
+    sending: 'Юборилмоқда…',
+    stepOf: (i, n) => `${i}-қадам (${n} дан)`,
+    questionOf: (i, n) => `Савол ${i} / ${n}`,
+    required: 'Тўлдириш шарт',
+    fillField: 'Илтимос, ушбу майдонни тўлдиринг',
+    invalidPhone: 'Тўғри телефон рақамини киритинг',
+    fillRequired: 'Илтимос, ушбу саволга жавоб беринг',
+    otherLabel: 'Бошқа',
+    otherPlaceholder: 'ўз вариантингиз',
+    inputPlaceholder: 'Жавобни киритинг…',
+    selectPlaceholder: '— Рўйхатдан танланг',
+    thanks: 'Раҳмат!',
+    thanksBody: 'Сизнинг фикр-мулоҳазаларингиз Verifix-ни янада яхшилашга ёрдам беради. Биз ҳар бир жавобни диққат билан ўқиб чиқамиз ва натижалар билан сизга қайтамиз.',
+  },
+  uz_lat: {
+    selectLang: 'Tilni tanlang',
+    surveyTitle: 'Verifix — mahsulot va xizmat haqida fikringiz',
+    intro: 'Soʻrovnoma ~7 daqiqa davom etadi. Har bir javobni shaxsan oʻqib, Verifix-ni rivojlantirish uchun foydalanamiz.',
+    introNote: 'Kompaniya nomi, F.I.SH. va telefon raqami majburiy — menejer siz bilan bogʻlanishi uchun kerak.',
+    start: 'Boshlash',
+    back: 'Orqaga',
+    next: 'Keyingi',
+    submit: 'Yuborish',
+    sending: 'Yuborilmoqda…',
+    stepOf: (i, n) => `${i}-qadam (${n} dan)`,
+    questionOf: (i, n) => `Savol ${i} / ${n}`,
+    required: 'Toʻldirish shart',
+    fillField: 'Iltimos, ushbu maydonni toʻldiring',
+    invalidPhone: 'Toʻgʻri telefon raqamini kiriting',
+    fillRequired: 'Iltimos, ushbu savolga javob bering',
+    otherLabel: 'Boshqa',
+    otherPlaceholder: 'oʻz variantingiz',
+    inputPlaceholder: 'Javobni kiriting…',
+    selectPlaceholder: '— Roʻyxatdan tanlang',
+    thanks: 'Rahmat!',
+    thanksBody: 'Sizning fikr-mulohazalaringiz Verifix-ni yanada yaxshilashga yordam beradi. Biz har bir javobni diqqat bilan oʻqib chiqamiz va natijalar bilan sizga qaytamiz.',
+  },
+};
+
+const LANG_NAMES = {
+  ru: 'Русский',
+  uz_cyr: 'Ўзбекча (Кирилл)',
+  uz_lat: 'Oʻzbekcha (Lotin)',
+};
+
+const IDENTITY_KEYS = new Set(['company_name', 'contact_name', 'position', 'phone']);
+
+const state = {
+  lang: null,
+  questions: [],
+  /** cursor: 'lang' | 'intro' | 'thanks' | key-of-visible-question */
+  cursor: 'lang',
+  identity: { company_name: '', contact_name: '', position: '', phone: '' },
+  answers: {},
+};
+
+// ============ LOAD ============
+async function init() {
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    state.lang = saved && UI[saved] ? saved : null;
+    const r = await fetch('/api/survey/questions');
+    const data = await r.json();
+    state.questions = (data.questions || []).sort(
+      (a, b) => a.step_number - b.step_number || a.position - b.position || a.id - b.id
+    );
+    loadDraft();
+    render();
+  } catch (e) {
+    document.getElementById('screen').innerHTML =
+      '<p class="subtitle">Не удалось загрузить опросник. Обновите страницу.</p>';
+  }
+}
+
+// ============ DRAFT ============
+function saveDraft() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      identity: state.identity,
+      answers: state.answers,
+      cursor: state.cursor,
+    }));
+    if (state.lang) localStorage.setItem(LANG_KEY, state.lang);
+  } catch (e) {}
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { if (state.lang) state.cursor = 'intro'; return; }
+    const d = JSON.parse(raw);
+    if (d.identity) state.identity = d.identity;
+    if (d.answers) state.answers = d.answers;
+    if (d.cursor) state.cursor = d.cursor;
+    if (!state.lang) state.cursor = 'lang';
+  } catch (e) {}
+}
+function clearDraft() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+// ============ i18n ============
+function t(x) {
+  if (x == null) return '';
+  if (typeof x === 'string') return x;
+  return x[state.lang] || x.ru || Object.values(x)[0] || '';
+}
+function optionsOf(q) {
+  const c = q.config || {};
+  const key = 'options_' + state.lang;
+  const arr = c[key] || c.options_ru || c.options || [];
+  return { localized: arr, canonical: c.options_ru || c.options || arr };
+}
+
+// ============ BRANCHING / VISIBILITY ============
+function isQuestionVisible(q) {
+  if (!q.show_if) return true;
+  return evalShowIf(q.show_if);
+}
+function evalShowIf(rule) {
+  const trigger = answerFor(rule.question_key);
+  const op = rule.op || 'in';
+  if (trigger === undefined || trigger === null || trigger === '') return false;
+  if (op === 'in') {
+    const arr = rule.values || [];
+    if (Array.isArray(trigger)) return trigger.some((x) => arr.includes(x));
+    return arr.includes(trigger);
+  }
+  if (op === 'eq') return trigger === rule.value;
+  const n = Number(trigger);
+  if (!Number.isFinite(n)) return false;
+  if (op === 'lte') return n <= Number(rule.value);
+  if (op === 'gte') return n >= Number(rule.value);
+  if (op === 'lt')  return n < Number(rule.value);
+  if (op === 'gt')  return n > Number(rule.value);
+  return false;
+}
+
+function answerFor(key) {
+  if (IDENTITY_KEYS.has(key)) return state.identity[key];
+  return state.answers[key];
+}
+
+// Flat visible list of questions — recomputed on each access
+function visibleQuestions() {
+  return state.questions.filter(isQuestionVisible);
+}
+
+// ============ NAVIGATION ============
+function currentQuestion() {
+  const list = visibleQuestions();
+  return list.find((q) => q.key === state.cursor) || null;
+}
+
+function goNext() {
+  const ui = UI[state.lang] || UI.ru;
+  if (state.cursor === 'lang') {
+    if (!state.lang) return;
+    state.cursor = 'intro'; saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  if (state.cursor === 'intro') {
+    const list = visibleQuestions();
+    state.cursor = list.length ? list[0].key : 'thanks';
+    saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  if (state.cursor === 'thanks') return;
+
+  // validate current
+  const q = currentQuestion();
+  if (!q) return;
+  if (q.required) {
+    const val = answerFor(q.key);
+    const empty = val === undefined || val === null || val === '' ||
+                  (Array.isArray(val) && val.length === 0);
+    if (empty) return showError(ui.fillRequired);
+    if (q.key === 'phone' && !isPhoneValid(String(val))) {
+      return showError(ui.invalidPhone);
+    }
+    // min_length for long_text (e.g. NPS follow-ups require at least 3 chars)
+    if (q.type === 'long_text' && q.config && q.config.min_length) {
+      if (String(val).trim().length < q.config.min_length) {
+        return showError(ui.fillRequired);
+      }
+    }
+  }
+
+  const list = visibleQuestions();
+  const i = list.findIndex((x) => x.key === q.key);
+  if (i < 0 || i === list.length - 1) {
+    submit();
+    return;
+  }
+  state.cursor = list[i + 1].key;
+  saveDraft(); render({ scrollTop: true });
+}
+
+function goBack() {
+  if (state.cursor === 'lang') return;
+  if (state.cursor === 'intro') {
+    state.cursor = 'lang';
+    saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  if (state.cursor === 'thanks') {
+    state.cursor = 'intro';
+    saveDraft(); render({ scrollTop: true });
+    return;
+  }
+  const list = visibleQuestions();
+  const i = list.findIndex((x) => x.key === state.cursor);
+  if (i <= 0) { state.cursor = 'intro'; saveDraft(); render({ scrollTop: true }); return; }
+  state.cursor = list[i - 1].key;
+  saveDraft(); render({ scrollTop: true });
+}
+
+// ============ RENDER ============
+function render(opts = {}) {
+  const ui = state.lang ? UI[state.lang] : UI.ru;
+  const screen = document.getElementById('screen');
+  const nav = document.getElementById('navBar');
+  const progress = document.getElementById('progressWrap');
+  const langCorner = document.getElementById('langCorner');
+
+  document.getElementById('message').textContent = '';
+  document.getElementById('message').className = 'message';
+
+  // Lang corner visibility
+  if (state.cursor === 'lang' || !state.lang) {
+    langCorner.hidden = true;
+  } else {
+    langCorner.hidden = false;
+    document.getElementById('langCurrentLabel').textContent = LANG_NAMES[state.lang];
+  }
+
+  const onQuestion = state.cursor !== 'lang' && state.cursor !== 'intro' && state.cursor !== 'thanks';
+
+  // Progress
+  if (onQuestion) {
+    const list = visibleQuestions();
+    const idx = list.findIndex((q) => q.key === state.cursor);
+    const current = idx >= 0 ? list[idx] : null;
+    if (!current) {
+      // cursor got lost (branching made it invisible) — bail to first visible
+      state.cursor = list.length ? list[0].key : 'thanks';
+      return render({ scrollTop: true });
+    }
+    const stepsTotal = new Set(state.questions.map((q) => q.step_number)).size;
+    progress.hidden = false;
+    document.getElementById('progressFill').style.width =
+      ((idx + 1) / list.length * 100) + '%';
+    document.getElementById('progressStep').textContent =
+      ui.stepOf(current.step_number, stepsTotal) + ' · ' + t(current.step_title);
+    document.getElementById('progressCount').textContent =
+      ui.questionOf(idx + 1, list.length);
+  } else {
+    progress.hidden = true;
+  }
+
+  // Nav
+  const isThanks = state.cursor === 'thanks';
+  const isLang = state.cursor === 'lang';
+  nav.hidden = isThanks || isLang;
+  const backBtn = document.getElementById('backBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.disabled = false;
+  backBtn.style.visibility = (state.cursor === 'intro' || isLang) ? 'hidden' : 'visible';
+  backBtn.textContent = ui.back;
+
+  // Next button label
+  if (state.cursor === 'intro') nextBtn.textContent = ui.start;
+  else if (onQuestion) {
+    const list = visibleQuestions();
+    const idx = list.findIndex((q) => q.key === state.cursor);
+    nextBtn.textContent = idx === list.length - 1 ? ui.submit : ui.next;
+  } else nextBtn.textContent = ui.next;
+
+  // Content
+  if (isLang) screen.innerHTML = renderLangPicker();
+  else if (state.cursor === 'intro') screen.innerHTML = renderIntro();
+  else if (isThanks) screen.innerHTML = renderThanks();
+  else screen.innerHTML = renderQuestion(currentQuestion());
+
+  bindEvents();
+
+  if (opts.scrollTop !== false) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function renderLangPicker() {
+  const titles = { ru: UI.ru.selectLang, uz_cyr: UI.uz_cyr.selectLang, uz_lat: UI.uz_lat.selectLang };
+  return `
+    <h1 class="screen-title">${titles.ru} · ${titles.uz_cyr} · ${titles.uz_lat}</h1>
+    <div class="lang-options">
+      <button type="button" class="lang-opt" data-lang="ru">
+        <div class="lang-code">RU</div>
+        <div class="lang-name">${LANG_NAMES.ru}</div>
+      </button>
+      <button type="button" class="lang-opt" data-lang="uz_cyr">
+        <div class="lang-code">ЎЗБ</div>
+        <div class="lang-name">${LANG_NAMES.uz_cyr}</div>
+      </button>
+      <button type="button" class="lang-opt" data-lang="uz_lat">
+        <div class="lang-code">UZ</div>
+        <div class="lang-name">${LANG_NAMES.uz_lat}</div>
+      </button>
+    </div>
+  `;
+}
+
+function renderIntro() {
+  const ui = UI[state.lang];
+  return `
+    <h1 class="screen-title">${escapeHtml(ui.surveyTitle)}</h1>
+    <p class="subtitle">${escapeHtml(ui.intro)}</p>
+    <p class="subtitle">${escapeHtml(ui.introNote)}</p>
+  `;
+}
+
+function renderThanks() {
+  const ui = UI[state.lang];
+  return `
+    <h1 class="screen-title">${escapeHtml(ui.thanks)}</h1>
+    <p class="subtitle">${escapeHtml(ui.thanksBody)}</p>
+  `;
+}
+
+function renderQuestion(q) {
+  const ui = UI[state.lang];
+  const list = visibleQuestions();
+  const idx = list.findIndex((x) => x.key === q.key);
+  const displayCode = q.step_number + '.' + (positionInStep(q, list) + 1);
+
+  const val = answerFor(q.key);
+  const title = escapeHtml(t(q.title));
+  const required = q.required ? '<span class="req">*</span>' : '';
+  const helpText = q.help_text ? `<p class="q-help-big">${escapeHtml(t(q.help_text))}</p>` : '';
+  const stepHelp = q.position === positionInStep(q, list) + 1 || idx === 0 || list[idx - 1].step_number !== q.step_number;
+  // Note: we show step help on the first visible question of each step
+  const showStepHelp = idx === 0 || list[idx - 1].step_number !== q.step_number;
+  const stepHelpBlock = (showStepHelp && q.step_help)
+    ? `<p class="step-help">${escapeHtml(t(q.step_help))}</p>` : '';
+
+  let body = '';
+
+  // Identity select (position-as-dropdown)
+  const isIdentity = IDENTITY_KEYS.has(q.key);
+  if (isIdentity && q.type === 'select') {
+    body = renderSelect(q, state.identity[q.key] || '', 'data-identity-select');
+  } else if (isIdentity && q.key === 'phone') {
+    // Phone is split into a locked '+998' prefix + digit input so the user
+    // can never delete the country code.
+    // v10-tweak: no spaces between prefix and digits — storage is "+998901234567".
+    let stored = state.identity.phone || '';
+    if (!stored) { stored = '+998'; state.identity.phone = stored; }
+    const digitsPart = stored.replace(/^\+998\s*/, '').replace(/\D/g, '');
+    body = `
+      <div class="phone-group">
+        <span class="phone-prefix">+998</span>
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" class="text-input big phone-suffix" data-identity-phone maxlength="12" value="${escapeAttr(digitsPart)}" placeholder="901234567" autofocus />
+      </div>`;
+    return `
+      <div class="q-block" data-q-key="${q.key}">
+        <div class="q-title">${displayCode}. ${title} ${required}</div>
+        ${helpText}
+        ${body}
+      </div>`;
+  } else if (isIdentity) {
+    const inputType = 'text';
+    const v = escapeAttr(state.identity[q.key] || '');
+    body = `<input type="${inputType}" class="text-input big" data-identity="${q.key}" maxlength="200" value="${v}" placeholder="${escapeAttr(ui.inputPlaceholder)}" autofocus />`;
+  } else if (q.type === 'short_text') {
+    const customPh = q.config && q.config.placeholder ? t(q.config.placeholder) : ui.inputPlaceholder;
+    body = `<input type="text" class="text-input big" data-qkey="${q.key}" maxlength="500" value="${escapeAttr(val || '')}" placeholder="${escapeAttr(customPh)}" autofocus />`;
+  } else if (q.type === 'long_text') {
+    const customPh = q.config && q.config.placeholder ? t(q.config.placeholder) : ui.inputPlaceholder;
+    const maxLen = (q.config && q.config.max_length) || 3000;
+    body = `<textarea class="text-input big" data-qkey="${q.key}" rows="5" maxlength="${maxLen}" placeholder="${escapeAttr(customPh)}" autofocus>${escapeHtml(val || '')}</textarea>`;
+  } else if (q.type === 'select') {
+    body = renderSelect(q, val || '', 'data-qkey');
+  } else if (q.type === 'radio') {
+    const { localized, canonical } = optionsOf(q);
+    const allowOther = q.config && q.config.allow_other;
+    const isOther = allowOther && val && !canonical.includes(val) && val !== '';
+
+    if (isOther) {
+      // Focus mode: hide other options, show only "Другое" + big textarea
+      body = `
+        <div class="options options-big options-other-focus">
+          <label class="opt opt-big opt-other-selected">
+            <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" checked />
+            <span>${escapeHtml(ui.otherLabel)}</span>
+          </label>
+          <textarea class="text-input big" data-qkey-other="${q.key}" maxlength="500" rows="3" placeholder="${escapeAttr(ui.otherPlaceholder)}" autofocus>${escapeHtml(val)}</textarea>
+          <button type="button" class="btn-ghost opt-other-back" data-other-back="${q.key}">← Показать все варианты</button>
+        </div>`;
+    } else {
+      body = '<div class="options options-big">' + localized.map((label, i) => {
+        const cv = canonical[i];
+        const checked = val === cv ? 'checked' : '';
+        return `
+          <label class="opt opt-big">
+            <input type="radio" name="${q.key}" value="${escapeAttr(cv)}" data-qkey="${q.key}" ${checked} />
+            <span>${escapeHtml(label)}</span>
+          </label>`;
+      }).join('');
+      if (allowOther) {
+        body += `
+          <label class="opt opt-big">
+            <input type="radio" name="${q.key}" value="__other__" data-qkey="${q.key}" />
+            <span>${escapeHtml(ui.otherLabel)}…</span>
+          </label>`;
+      }
+      body += '</div>';
+    }
+  } else if (q.type === 'checkbox') {
+    const { localized, canonical } = optionsOf(q);
+    const arr = Array.isArray(val) ? val : [];
+    const allowOther = q.config && q.config.allow_other;
+    // "Other" value is any array entry that isn't one of the canonical options
+    const otherValue = allowOther ? (arr.find((v) => !canonical.includes(v)) || '') : '';
+    const otherActive = !!otherValue;
+
+    if (otherActive) {
+      // Focus mode: only "Другое" row + big textarea
+      body = `
+        <div class="options options-big options-other-focus">
+          <label class="opt opt-big opt-other-selected">
+            <input type="checkbox" data-qkey-multi-other="${q.key}" checked />
+            <span>${escapeHtml(ui.otherLabel)}</span>
+          </label>
+          <textarea class="text-input big" data-qkey-other="${q.key}" maxlength="500" rows="3" placeholder="${escapeAttr(ui.otherPlaceholder)}" autofocus>${escapeHtml(otherValue)}</textarea>
+          <button type="button" class="btn-ghost opt-other-back" data-other-back="${q.key}">← Показать все варианты</button>
+        </div>`;
+    } else {
+      body = '<div class="options options-big">' + localized.map((label, i) => {
+        const cv = canonical[i];
+        const checked = arr.includes(cv) ? 'checked' : '';
+        return `
+          <label class="opt opt-big">
+            <input type="checkbox" value="${escapeAttr(cv)}" data-qkey-multi="${q.key}" ${checked} />
+            <span>${escapeHtml(label)}</span>
+          </label>`;
+      }).join('');
+      if (allowOther) {
+        body += `
+          <label class="opt opt-big">
+            <input type="checkbox" data-qkey-multi-other="${q.key}" />
+            <span>${escapeHtml(ui.otherLabel)}…</span>
+          </label>`;
+      }
+      body += '</div>';
+    }
+  } else if (q.type === 'scale') {
+    const c = q.config || {};
+    const min = c.min ?? 1, max = c.max ?? 5;
+    const count = max - min + 1;
+    const low = c.low_label ? t(c.low_label) : '';
+    const high = c.high_label ? t(c.high_label) : '';
+    const leftEmoji = (c.anchors && c.anchors.left_emoji) || '😕';
+    const rightEmoji = (c.anchors && c.anchors.right_emoji) || '😍';
+    const isNps = min === 0 && max === 10 && count === 11;
+
+    // Colour-zone classifier. NPS: 0-6 / 7-8 / 9-10. 5-point: 1-2 / 3 / 4-5.
+    const zoneClass = (i) => {
+      if (isNps) return i <= 6 ? 'nps-det' : (i <= 8 ? 'nps-neu' : 'nps-pro');
+      return i <= 2 ? 'nps-det' : (i === 3 ? 'nps-neu' : 'nps-pro');
+    };
+    const ZONE_TEXT_COLOR = { 'nps-det': '#501313', 'nps-neu': '#633806', 'nps-pro': '#173404' };
+
+    const zoneLabel = (i) => {
+      const z = zoneClass(i);
+      if (isNps) {
+        return { 'nps-det': { ru: 'детрактор', uz_cyr: 'детрактор', uz_lat: 'detraktor' },
+                 'nps-neu': { ru: 'нейтрал',   uz_cyr: 'нейтрал',   uz_lat: 'neytral' },
+                 'nps-pro': { ru: 'промоутер', uz_cyr: 'промоутер', uz_lat: 'promouter' } }[z][state.lang] || '';
+      }
+      return '';
+    };
+
+    let tiles = '';
+    for (let i = min; i <= max; i++) {
+      const checked = String(val) === String(i);
+      const aria = zoneLabel(i) ? `${i} — ${zoneLabel(i)}` : String(i);
+      tiles += `<button type="button" class="nps-tile ${zoneClass(i)}${checked ? ' selected' : ''}" data-nps-key="${q.key}" data-nps-val="${i}" role="radio" aria-checked="${checked}" aria-label="${aria}" tabindex="${checked || (val === undefined && i === min) ? '0' : '-1'}">${i}</button>`;
+    }
+
+    // Confirmation row: appears once a value is chosen.
+    const CONFIRM_LABEL = { ru: 'Ваша оценка:', uz_cyr: 'Сизнинг баҳоингиз:', uz_lat: 'Sizning bahoyingiz:' };
+    const confirmLabel = CONFIRM_LABEL[state.lang] || CONFIRM_LABEL.ru;
+    const selectedVal = (val !== undefined && val !== '' && !isNaN(Number(val))) ? Number(val) : null;
+    const confirmRow = selectedVal !== null
+      ? `<div class="rating-confirm">
+           <span class="rating-confirm-label">${escapeHtml(confirmLabel)}</span>
+           <span class="rating-confirm-value" style="color:${ZONE_TEXT_COLOR[zoneClass(selectedVal)]}">${selectedVal}</span>
+         </div>`
+      : '';
+
+    const scaleCountClass = isNps ? '' : ` nps-scale-${count}`;
+    body = `
+      <div class="nps-scale-wrap">
+        <div class="nps-anchors" aria-hidden="true">
+          <div class="nps-anchor-left"><span class="nps-emo">${leftEmoji}</span><span>${escapeHtml(low)}</span></div>
+          <div class="nps-anchor-right"><span>${escapeHtml(high)}</span><span class="nps-emo">${rightEmoji}</span></div>
+        </div>
+        <div class="nps-scale${scaleCountClass}" role="radiogroup" aria-label="${escapeAttr(t(q.title))}" data-nps-key="${q.key}">
+          ${tiles}
+        </div>
+        ${confirmRow}
+      </div>`;
+  }
+
+  return `
+    ${stepHelpBlock}
+    <h2 class="q-title-big">
+      <span class="q-code">${displayCode}.</span>
+      ${escapeHtml(t(q.title))} ${required}
+    </h2>
+    ${helpText}
+    <div class="q-body">${body}</div>
+  `;
+}
+
+function renderSelect(q, currentVal, attrName) {
+  const ui = UI[state.lang];
+  const { localized, canonical } = optionsOf(q);
+  const allowOther = q.config && q.config.allow_other;
+  const isOther = currentVal && !canonical.includes(currentVal);
+  const selectedCanonical = isOther ? '__other__' : (currentVal || '');
+  let options = `<option value="">${escapeHtml(ui.selectPlaceholder)}</option>`;
+  localized.forEach((label, i) => {
+    const cv = canonical[i];
+    const sel = cv === selectedCanonical ? 'selected' : '';
+    options += `<option value="${escapeAttr(cv)}" ${sel}>${escapeHtml(label)}</option>`;
+  });
+  if (allowOther) {
+    options += `<option value="__other__" ${isOther ? 'selected' : ''}>${escapeHtml(ui.otherLabel)}…</option>`;
+  }
+  let out = `<select class="text-input big select-input" ${attrName}="${q.key}">${options}</select>`;
+  if (allowOther) {
+    const otherAttr = attrName === 'data-identity-select' ? 'data-identity-other' : 'data-qkey-other';
+    out += `<input type="text" class="text-input big inline-other-under" ${otherAttr}="${q.key}" maxlength="200" value="${escapeAttr(isOther ? currentVal : '')}" placeholder="${escapeAttr(ui.otherPlaceholder)}" ${isOther ? '' : 'hidden'} />`;
+  }
+  return out;
+}
+
+function positionInStep(q, list) {
+  const step = list.filter((x) => x.step_number === q.step_number);
+  return step.findIndex((x) => x.key === q.key);
+}
+
+// ============ EVENTS ============
+function bindEvents() {
+  // Language picker buttons
+  document.querySelectorAll('[data-lang]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.lang = btn.dataset.lang;
+      document.documentElement.lang =
+        state.lang === 'ru' ? 'ru' : (state.lang === 'uz_cyr' ? 'uz-Cyrl' : 'uz-Latn');
+      saveDraft();
+      state.cursor = 'intro';
+      render({ scrollTop: true });
+    });
+  });
+
+  const lcb = document.getElementById('langChangeBtn');
+  if (lcb) lcb.addEventListener('click', () => {
+    state.cursor = 'lang'; saveDraft(); render({ scrollTop: true });
+  });
+
+  // Identity inputs
+  document.querySelectorAll('[data-identity]').forEach((el) => {
+    const k = el.dataset.identity;
+    el.addEventListener('input', () => {
+      state.identity[k] = el.value; saveDraft();
+    });
+    if (el.tagName === 'INPUT' && el.type !== 'radio') {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); goNext(); }
+      });
+    }
+  });
+
+  // Phone suffix (after locked +998 prefix).
+  // v10-tweak: digits only — strip everything else on every keystroke / paste.
+  document.querySelectorAll('[data-identity-phone]').forEach((el) => {
+    const sanitize = () => {
+      const digitsOnly = (el.value || '').replace(/\D/g, '');
+      if (el.value !== digitsOnly) el.value = digitsOnly;
+      state.identity.phone = '+998' + digitsOnly;
+      saveDraft();
+    };
+    el.addEventListener('input', sanitize);
+    el.addEventListener('paste', () => setTimeout(sanitize, 0));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); goNext(); }
+    });
+  });
+  document.querySelectorAll('[data-identity-select]').forEach((el) => {
+    const k = el.dataset.identitySelect;
+    el.addEventListener('change', () => {
+      const other = document.querySelector(`[data-identity-other="${k}"]`);
+      if (el.value === '__other__') {
+        if (other) other.hidden = false;
+        state.identity[k] = other ? other.value : '';
+      } else {
+        if (other) { other.hidden = true; other.value = ''; }
+        state.identity[k] = el.value;
+      }
+      saveDraft();
+    });
+  });
+  document.querySelectorAll('[data-identity-other]').forEach((el) => {
+    const k = el.dataset.identityOther;
+    el.addEventListener('input', () => {
+      const sel = document.querySelector(`[data-identity-select="${k}"]`);
+      if (sel) sel.value = '__other__';
+      state.identity[k] = el.value; saveDraft();
+    });
+  });
+
+  // Answer inputs
+  document.querySelectorAll('[data-qkey]').forEach((el) => {
+    const key = el.dataset.qkey;
+    if (el.type === 'radio') {
+      el.addEventListener('change', () => {
+        if (!el.checked) return;
+        if (el.value === '__other__') {
+          // Switch into "other focus" mode — hide other options, show textarea.
+          // Use whitespace as sentinel marker so isOther detection triggers.
+          const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
+          const existing = otherInput ? otherInput.value : '';
+          state.answers[key] = existing || ' ';
+          saveDraft();
+          render({ scrollTo: false });
+          return;
+        }
+        const num = Number(el.value);
+        state.answers[key] = Number.isFinite(num) && el.name === key && /^-?\d+$/.test(el.value) ? num : el.value;
+        saveDraft();
+        if (dependentExists(key)) render({ scrollTo: false });
+      });
+    } else if (el.tagName === 'SELECT') {
+      el.addEventListener('change', () => {
+        const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
+        if (el.value === '__other__') {
+          if (otherInput) otherInput.hidden = false;
+          state.answers[key] = otherInput ? otherInput.value : '';
+        } else {
+          if (otherInput) { otherInput.hidden = true; otherInput.value = ''; }
+          state.answers[key] = el.value;
+        }
+        saveDraft();
+      });
+    } else if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.addEventListener('input', () => {
+        state.answers[key] = el.value; saveDraft();
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && el.tagName === 'INPUT') { e.preventDefault(); goNext(); }
+      });
+    }
+  });
+
+  document.querySelectorAll('[data-qkey-other]').forEach((el) => {
+    const key = el.dataset.qkeyOther;
+    el.addEventListener('input', () => {
+      const q = state.questions.find((x) => x.key === key);
+      const isCheckbox = q && q.type === 'checkbox';
+      if (isCheckbox) {
+        // Maintain canonical picks + this custom text
+        const canonical = (q.config && (q.config.options_ru || q.config.options)) || [];
+        const current = Array.isArray(state.answers[key]) ? state.answers[key] : [];
+        const kept = current.filter((v) => canonical.includes(v));
+        // el.value.trim() may be empty; still keep sentinel so Back button logic works
+        kept.push(el.value.trim() || ' ');
+        state.answers[key] = kept;
+      } else {
+        // radio / select
+        state.answers[key] = el.value;
+      }
+      saveDraft();
+    });
+  });
+
+  document.querySelectorAll('[data-qkey-multi]').forEach((el) => {
+    el.addEventListener('change', () => {
+      const key = el.dataset.qkeyMulti;
+      rebuildMultiAnswer(key);
+      saveDraft();
+    });
+  });
+
+  document.querySelectorAll('[data-qkey-multi-other]').forEach((el) => {
+    const key = el.dataset.qkeyMultiOther;
+    el.addEventListener('change', () => {
+      if (el.checked) {
+        // Switch into "other focus" mode
+        const curr = state.answers[key];
+        const arr = Array.isArray(curr) ? curr.slice() : [];
+        // Put sentinel marker; user types real value into the textarea
+        arr.push(' ');
+        state.answers[key] = arr;
+        saveDraft();
+        render({ scrollTo: false });
+      } else {
+        rebuildMultiAnswer(key);
+        saveDraft();
+      }
+    });
+  });
+
+  // "← Back to options" inside focus mode
+  document.querySelectorAll('[data-other-back]').forEach((el) => {
+    const key = el.dataset.otherBack;
+    el.addEventListener('click', () => {
+      // Clear "other" value from state; re-render with all options visible
+      const q = state.questions.find((x) => x.key === key);
+      if (!q) return;
+      const canonical = (q.config && (q.config.options_ru || q.config.options)) || [];
+      if (q.type === 'checkbox') {
+        const arr = Array.isArray(state.answers[key]) ? state.answers[key].filter((v) => canonical.includes(v)) : [];
+        state.answers[key] = arr;
+      } else {
+        state.answers[key] = '';
+      }
+      saveDraft();
+      render({ scrollTo: false });
+    });
+  });
+
+  // NPS / rating tiles: click + keyboard navigation + haptic
+  document.querySelectorAll('.nps-tile').forEach((btn) => {
+    const key = btn.dataset.npsKey;
+    const val = Number(btn.dataset.npsVal);
+    btn.addEventListener('click', () => {
+      // No-op if re-clicking the currently-selected tile
+      if (state.answers[key] === val) return;
+      state.answers[key] = val;
+      saveDraft();
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} }
+      // Re-render the current screen so the confirmation row + colour
+      // of selected tile update correctly. No scroll jump.
+      render({ scrollTo: false });
+    });
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        btn.click();
+        return;
+      }
+      let next = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = val + 1;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = val - 1;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End')  next = 10;
+      if (next !== null && next >= 0 && next <= 10) {
+        e.preventDefault();
+        const target = document.querySelector(`.nps-tile[data-nps-key="${key}"][data-nps-val="${next}"]`);
+        if (target) target.focus();
+      }
+    });
+  });
+
+  document.getElementById('backBtn').onclick = goBack;
+  document.getElementById('nextBtn').onclick = goNext;
+}
+
+/* Assemble checkbox answer: canonical option values that are checked + custom "other" text */
+function rebuildMultiAnswer(key) {
+  const boxes = document.querySelectorAll(`[data-qkey-multi="${key}"]`);
+  const checkedOpts = Array.from(boxes).filter((b) => b.checked).map((b) => b.value);
+  const otherCb = document.querySelector(`[data-qkey-multi-other="${key}"]`);
+  const otherInput = document.querySelector(`[data-qkey-other="${key}"]`);
+  if (otherCb && otherCb.checked && otherInput && otherInput.value.trim()) {
+    checkedOpts.push(otherInput.value.trim());
+  }
+  state.answers[key] = checkedOpts;
+}
+
+// ============ SUBMIT ============
+async function submit() {
+  const ui = UI[state.lang];
+  const btn = document.getElementById('nextBtn');
+  btn.disabled = true;
+  btn.textContent = ui.sending;
+
+  // Also validate identity before submit (in case user navigated by clicking back through them)
+  if (!state.identity.company_name?.trim() || !state.identity.contact_name?.trim() ||
+      !isPhoneValid(state.identity.phone || '')) {
+    btn.disabled = false;
+    btn.textContent = ui.submit;
+    return showError(ui.fillRequired);
+  }
+
+  const payload = {
+    company_name: state.identity.company_name,
+    contact_name: state.identity.contact_name,
+    position: state.identity.position,
+    phone: state.identity.phone,
+    language: state.lang,
+    answers: Object.keys(state.answers).map((key) => ({
+      question_key: key,
+      value: state.answers[key],
+    })),
+  };
+
+  try {
+    const r = await fetch('/api/survey/responses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Ошибка отправки');
+    clearDraft();
+    state.cursor = 'thanks';
+    render({ scrollTop: true });
+  } catch (e) {
+    showError(e.message);
+    btn.disabled = false;
+    btn.textContent = ui.submit;
+  }
+}
+
+// ============ HELPERS ============
+function isPhoneValid(p) {
+  const digits = (p || '').replace(/\D/g, '');
+  return digits.startsWith('998') && digits.length >= 12;
+}
+function showError(msg) {
+  const el = document.getElementById('message');
+  el.textContent = msg;
+  el.className = 'message error';
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+init();
+</script>
+<script src="/stars-v10.js?v=1"></script>
+</body>
+</html>
