@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=16" />
+<link rel="stylesheet" href="/style.css?v=17" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -565,6 +565,7 @@ const COLUMNS = [
   { id: 'date',     label: 'Дата',       default: true  },
 ];
 const COL_STORAGE_KEY = 'verifix_admin_cols_v1';
+const COL_ORDER_KEY = 'verifix_admin_col_order_v1';
 function loadVisibleCols() {
   try {
     const raw = localStorage.getItem(COL_STORAGE_KEY);
@@ -575,7 +576,31 @@ function loadVisibleCols() {
 function saveVisibleCols(set) {
   try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify([...set])); } catch (_) {}
 }
+// Column ORDER is persisted separately so the operator can drag headers to
+// reorder them, and the order survives reloads. New columns added in a future
+// release that aren't in the saved order are appended at the end.
+function loadColumnOrder() {
+  let saved = [];
+  try {
+    const raw = localStorage.getItem(COL_ORDER_KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch (_) {}
+  const known = new Set(COLUMNS.map((c) => c.id));
+  const ordered = saved.filter((id) => known.has(id));
+  for (const c of COLUMNS) if (!ordered.includes(c.id)) ordered.push(c.id);
+  return ordered;
+}
+function saveColumnOrder(order) {
+  try { localStorage.setItem(COL_ORDER_KEY, JSON.stringify(order)); } catch (_) {}
+}
 let visibleCols = loadVisibleCols();
+let columnOrder = loadColumnOrder();
+// Resolve to the live ordered list of [{id, label, ...}] currently visible.
+function activeColumns() {
+  return columnOrder
+    .map((id) => COLUMNS.find((c) => c.id === id))
+    .filter((c) => c && visibleCols.has(c.id));
+}
 
 // Urgency classifier: returns 'high' | 'medium' | 'low'. High = immediate
 // callback warranted (explicit callback request, detractor NPS, very low
@@ -709,8 +734,50 @@ function renderResponses() {
   const body = document.getElementById('respBody');
   const empty = document.getElementById('respEmpty');
 
-  const activeCols = COLUMNS.filter((c) => visibleCols.has(c.id));
-  head.innerHTML = '<tr>' + activeCols.map((c) => `<th>${escapeHtml(c.label)}</th>`).join('') + '<th></th></tr>';
+  const activeCols = activeColumns();
+  // Each <th> is draggable so the operator can reorder columns. The col-id
+  // is on data-col-id; on drop we splice the dragged id to the new index
+  // in columnOrder, persist, and re-render.
+  head.innerHTML = '<tr>' +
+    activeCols.map((c) =>
+      `<th draggable="true" data-col-id="${c.id}" title="Перетащите для переноса">${escapeHtml(c.label)}</th>`
+    ).join('') +
+    '<th></th></tr>';
+
+  // Drag-drop wiring (header reorder)
+  let dragId = null;
+  head.querySelectorAll('th[draggable="true"]').forEach((th) => {
+    th.addEventListener('dragstart', (e) => {
+      dragId = th.dataset.colId;
+      th.classList.add('th-dragging');
+      try { e.dataTransfer.setData('text/plain', dragId); } catch (_) {}
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    th.addEventListener('dragend', () => {
+      th.classList.remove('th-dragging');
+      head.querySelectorAll('.th-drop-target').forEach((x) => x.classList.remove('th-drop-target'));
+      dragId = null;
+    });
+    th.addEventListener('dragover', (e) => {
+      if (!dragId || dragId === th.dataset.colId) return;
+      e.preventDefault();
+      th.classList.add('th-drop-target');
+    });
+    th.addEventListener('dragleave', () => th.classList.remove('th-drop-target'));
+    th.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const targetId = th.dataset.colId;
+      const movedId = dragId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+      if (!movedId || movedId === targetId) return;
+      const from = columnOrder.indexOf(movedId);
+      const to = columnOrder.indexOf(targetId);
+      if (from === -1 || to === -1) return;
+      columnOrder.splice(from, 1);
+      columnOrder.splice(to, 0, movedId);
+      saveColumnOrder(columnOrder);
+      renderResponses();
+    });
+  });
 
   if (!list.length) { body.innerHTML = ''; empty.hidden = false; return; }
   empty.hidden = true;
@@ -1086,6 +1153,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=16"></script>
+<script src="/stars.js?v=17"></script>
 </body>
 </html>

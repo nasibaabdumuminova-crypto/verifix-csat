@@ -845,8 +845,13 @@ app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
       getAllResponses(),
       getAllQuestions({ includeDeleted: true }),
     ]);
+    // Skip identity-key questions to avoid duplicate columns (those keys
+    // already live as columns directly on survey_responses, not in answers).
+    const IDENTITY_KEYS = new Set(['id', 'created_at', 'language',
+                                   'company_name', 'contact_name', 'position', 'phone']);
+    const surveyQuestions = questions.filter((q) => !IDENTITY_KEYS.has(q.key));
     const cols = ['id', 'created_at', 'language', 'company_name', 'contact_name', 'position', 'phone',
-                  ...questions.map((q) => q.key)];
+                  ...surveyQuestions.map((q) => q.key)];
     const escape = (s) => {
       if (s === null || s === undefined) return '';
       const str = Array.isArray(s) ? s.join(' | ') : String(s);
@@ -858,7 +863,7 @@ app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
       const row = [
         r.id, r.created_at, r.language || 'ru',
         r.company_name, r.contact_name || '', r.position || '', r.phone || '',
-        ...questions.map((q) => escape(byKey.get(q.key))),
+        ...surveyQuestions.map((q) => escape(byKey.get(q.key))),
       ];
       lines.push(row.map((x) => (typeof x === 'string' && x.startsWith('"') ? x : escape(x))).join(','));
     }
@@ -884,7 +889,15 @@ app.get('/api/admin/survey/export.xlsx', requireAuth, async (req, res) => {
     wb.creator = 'Verifix';
     wb.created = new Date();
 
-    // Sheet 1: responses (rows = clients, cols = identity + each question)
+    // Sheet 1: responses (rows = clients, cols = identity + each question).
+    // CRITICAL: skip questions whose key collides with one of our identity
+    // column keys — exceljs keys ws.columns by `key`, so e.g. column
+    // 'company_name' would otherwise be defined twice and the row write
+    // would only land in the LAST one (a question that has no answer in
+    // survey_answers because identity fields live on survey_responses
+    // directly). That's why Компания/ФИО/Должность/Телефон came out empty.
+    const IDENTITY_KEYS = new Set(['id', 'created_at', 'language',
+                                   'company_name', 'contact_name', 'position', 'phone']);
     const ws = wb.addWorksheet('Ответы');
     const cols = [
       { header: 'ID',         key: 'id',           width: 6  },
@@ -894,11 +907,13 @@ app.get('/api/admin/survey/export.xlsx', requireAuth, async (req, res) => {
       { header: 'ФИО',        key: 'contact_name', width: 24 },
       { header: 'Должность',  key: 'position',     width: 22 },
       { header: 'Телефон',    key: 'phone',        width: 18 },
-      ...questions.map((q) => ({
-        header: (q.title && q.title.ru) || q.key,
-        key: q.key,
-        width: 28,
-      })),
+      ...questions
+        .filter((q) => !IDENTITY_KEYS.has(q.key))
+        .map((q) => ({
+          header: (q.title && q.title.ru) || q.key,
+          key: q.key,
+          width: 28,
+        })),
     ];
     ws.columns = cols;
 
@@ -914,6 +929,7 @@ app.get('/api/admin/survey/export.xlsx', requireAuth, async (req, res) => {
         phone: r.phone || '',
       };
       for (const q of questions) {
+        if (IDENTITY_KEYS.has(q.key)) continue;
         const v = byKey.get(q.key);
         row[q.key] = Array.isArray(v) ? v.join(' | ') : (v == null ? '' : String(v));
       }
@@ -977,10 +993,66 @@ app.get('/api/admin/survey/export.pdf', requireAuth, async (req, res) => {
       `Менеджер: ${statsAll.scales.manager_score.avg ?? '—'} (n=${statsAll.scales.manager_score.count})`,
     ];
     for (const l of lines) doc.text(l);
+    doc.moveDown(0.8);
+
+    // ---- Distribution charts (the dashboard "cards" rendered as text bars) ----
+    // Each shows the option label + count + percentage + a tiny bar so an
+    // analyst gets a quick eyeballable chart per question.
+    doc.fillColor('#000').fontSize(14).text('Распределения по ключевым вопросам', { underline: true });
+    doc.moveDown(0.4);
+
+    const distCharts = [
+      { title: 'Намерение продлить (6.1)',         data: statsAll.distributions.renewal_intent },
+      { title: 'Готовность рекомендовать (6.4)',   data: statsAll.distributions.reference_willingness },
+      { title: 'Окупаемость (4.2)',                data: statsAll.distributions.roi_category },
+      { title: 'Отрасль (2.1)',                    data: statsAll.distributions.industry },
+      { title: 'Размер компании (2.2)',            data: statsAll.distributions.company_size },
+      { title: 'Пользуются мобильной (5.3)',       data: statsAll.distributions.mobile_usage },
+      { title: 'Запрос звонка менеджера (6.6)',    data: statsAll.distributions.callback_request },
+      { title: 'Планы по штату (6.3)',             data: statsAll.distributions.headcount_plans },
+    ];
+
+    function drawDistChart(title, data) {
+      const entries = Object.entries(data || {}).sort((a, b) => b[1] - a[1]);
+      const total = entries.reduce((s, [, n]) => s + n, 0);
+      // Page-break heuristic: each row ~ 14 pt + title 18 pt
+      const need = 18 + entries.length * 14 + 12;
+      if (doc.y + need > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage({ size: 'A4', layout: 'landscape', margin: 36 });
+      }
+      doc.fontSize(11).fillColor('#3C3489').text(title);
+      doc.fontSize(9).fillColor('#000');
+      if (!total) {
+        doc.text('  (нет данных)', { indent: 10 }); doc.moveDown(0.3); return;
+      }
+      const labelW = 220, barW = 240, barH = 8, leftX = doc.page.margins.left + 10;
+      for (const [k, n] of entries) {
+        const pct = Math.round(n / total * 100);
+        const y = doc.y;
+        doc.fillColor('#000').text(String(k).slice(0, 60), leftX, y, { width: labelW, ellipsis: true });
+        // Track + fill
+        const barX = leftX + labelW + 6;
+        doc.rect(barX, y + 2, barW, barH).fill('#E4E2EC');
+        doc.rect(barX, y + 2, barW * (pct / 100), barH).fill('#7B3FF2');
+        // Count + pct
+        doc.fillColor('#444').fontSize(9)
+           .text(`${n} · ${pct}%`, barX + barW + 8, y, { width: 60 });
+        // Move cursor down 1 line. PDFKit doesn't auto-advance after a positioned text().
+        doc.y = y + 13;
+        doc.x = doc.page.margins.left;
+      }
+      doc.moveDown(0.4);
+    }
+
+    for (const ch of distCharts) drawDistChart(ch.title, ch.data);
+
     doc.moveDown(0.6);
 
     // ---- Responses table ----
-    doc.fontSize(14).text('Ответы клиентов', { underline: true });
+    if (doc.y + 60 > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage({ size: 'A4', layout: 'landscape', margin: 36 });
+    }
+    doc.fillColor('#000').fontSize(14).text('Ответы клиентов', { underline: true });
     doc.moveDown(0.3);
 
     const colsT = [
