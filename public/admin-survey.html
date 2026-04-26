@@ -908,7 +908,26 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) { return escapeHtml(s); }
 
+// One-click login via ?key=... URL param. Useful when the operator
+// is locked out of the login form (browser cache / typo / IME issue).
+// On success: persists password in sessionStorage and replaces URL so
+// the param doesn't sit in browser history or get accidentally shared.
 (async () => {
+  const urlKey = new URLSearchParams(location.search).get('key');
+  if (urlKey) {
+    password.value = urlKey.trim();
+    if (await loadAll()) {
+      sessionStorage.setItem('csat_pwd', password.value);
+      loginScreen.hidden = true;
+      dashboard.hidden = false;
+      // Strip the key from the URL so it doesn't linger.
+      try { history.replaceState({}, '', location.pathname); } catch (_) {}
+      return;
+    } else {
+      sessionStorage.removeItem('csat_pwd');
+      // Fall through to normal login flow below.
+    }
+  }
   if (password.value) {
     if (await loadAll()) {
       loginScreen.hidden = true;
