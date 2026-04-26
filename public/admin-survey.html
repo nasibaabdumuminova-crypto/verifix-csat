@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=17" />
+<link rel="stylesheet" href="/style.css?v=18" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -30,6 +30,7 @@
       <div class="brand">
         <img src="/logo.png" alt="Verifix" class="brand-mark" />
         <div class="brand-name">Опросник клиентов</div>
+        <span id="roleBadge" class="role-badge role-viewer-badge" hidden>👁 Режим просмотра</span>
       </div>
       <div class="dash-actions">
         <a href="/admin" class="btn-ghost">→ NPS Radar</a>
@@ -289,7 +290,26 @@
 
 <script>
 const password = { value: sessionStorage.getItem('csat_pwd') || '' };
-const state = { stats: null, responses: [], questions: [], editingId: null, langEdit: 'ru' };
+// userRole: 'admin' = full access (delete, edit, add); 'viewer' = read-only
+const state = { stats: null, responses: [], questions: [], editingId: null, langEdit: 'ru', userRole: 'admin' };
+
+// Apply or remove `role-viewer` class on body so CSS can hide destructive
+// controls + show the "Режим просмотра" badge.
+function applyRoleRestrictions() {
+  const isViewer = state.userRole === 'viewer';
+  document.body.classList.toggle('role-viewer', isViewer);
+  const badge = document.getElementById('roleBadge');
+  if (badge) badge.hidden = !isViewer;
+  // If viewer accidentally lands on the questions-editor tab, bump them
+  // back to the dashboard (they can't do anything there anyway).
+  if (isViewer) {
+    const qTab = document.querySelector('.tab[data-tab="questions"]');
+    if (qTab && qTab.classList.contains('active')) {
+      const dashTab = document.querySelector('.tab[data-tab="stats"]');
+      if (dashTab) dashTab.click();
+    }
+  }
+}
 const LANG_NAMES = { ru: 'Русский', uz_cyr: 'Ўзбекча (Кирилл)', uz_lat: 'Oʻzbekcha (Lotin)' };
 
 function tr(x, lang='ru') {
@@ -346,12 +366,17 @@ async function authedFetch(url, opts = {}) {
 
 async function loadAll() {
   try {
-    const [stats, responses, questions] = await Promise.all([
+    const [whoamiR, stats, responses, questions] = await Promise.all([
+      authedFetch('/api/admin/whoami').then((r) => r.status === 401 ? null : r.json()),
       authedFetch('/api/admin/survey/stats').then((r) => r.status === 401 ? null : r.json()),
       authedFetch('/api/admin/survey/responses').then((r) => r.status === 401 ? null : r.json()),
       authedFetch('/api/admin/survey/questions').then((r) => r.status === 401 ? null : r.json()),
     ]);
-    if (!stats || !responses || !questions) return false;
+    if (!whoamiR || !stats || !responses || !questions) return false;
+    // Capture current user role so the client can hide destructive
+    // controls (delete buttons, question editor) for viewer-role users.
+    state.userRole = whoamiR.role || 'admin';
+    applyRoleRestrictions();
     state.stats = stats;
     state.responses = responses.responses;
     state.responsesQuestions = responses.questions;
@@ -1153,6 +1178,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=17"></script>
+<script src="/stars.js?v=18"></script>
 </body>
 </html>
