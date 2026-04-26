@@ -1025,6 +1025,18 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   color: var(--c-muted);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 1;
+  cursor: grab;
+  user-select: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.resp-table thead th:active { cursor: grabbing; }
+.resp-table thead th.th-dragging {
+  opacity: 0.55;
+  background: rgba(123, 63, 242, 0.5);
+}
+.resp-table thead th.th-drop-target {
+  border-left: 3px solid var(--c-violet);
+  background: rgba(123, 63, 242, 0.2);
 }
 .resp-table tbody td {
   padding: 12px 14px;
