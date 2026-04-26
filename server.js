@@ -8,6 +8,13 @@ const PORT = process.env.PORT || 3000;
 // with a stray newline or leading/trailing space — that used to lock
 // the operator out of /admin/survey with a correct-looking password.
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '123').trim();
+
+// Temporary recovery password — operator is locked out of admin and
+// the Railway env-var value isn't matching what they think it is.
+// This always works in addition to ADMIN_PASSWORD until removed.
+// To remove: delete this constant and the OR-check in checkAuth() below,
+// then commit. Hardcoded value is intentionally NOT secret-grade.
+const ADMIN_PASSWORD_RECOVERY = 'verifix-admin-26';
 const USE_DB = !!process.env.DATABASE_URL;
 
 // Storage abstraction: PostgreSQL in production, in-memory fallback for local preview.
@@ -598,12 +605,34 @@ function checkAuth(req) {
   // auto-fill / password managers and we don't want that locking anyone out.
   const pwd = raw == null ? '' : String(raw).trim();
   if (!pwd) return false;
-  return pwd === ADMIN_PASSWORD;
+  return pwd === ADMIN_PASSWORD || pwd === ADMIN_PASSWORD_RECOVERY;
 }
 function requireAuth(req, res, next) {
   if (!checkAuth(req)) return res.status(401).json({ error: 'Неверный пароль' });
   next();
 }
+
+// Password fingerprint — public, no auth, doesn't reveal the actual
+// password but lets the operator confirm what's in env vs. what they
+// think they typed. If the operator's expected password produces a
+// different fingerprint than what's shown here, the values don't match.
+app.get('/api/admin/pwd-fingerprint', (req, res) => {
+  const fp = (s) => {
+    const v = String(s || '').trim();
+    if (!v) return { length: 0, first: '', last: '', empty: true };
+    return {
+      length: v.length,
+      first: v[0],
+      last: v[v.length - 1],
+      sample: v[0] + '*'.repeat(Math.max(0, v.length - 2)) + v[v.length - 1],
+    };
+  };
+  res.json({
+    primary:  fp(ADMIN_PASSWORD),
+    recovery: fp(ADMIN_PASSWORD_RECOVERY),
+    note: 'Сравните длину/первый-последний символ с тем что вы вводите. Не совпадает — где-то опечатка.',
+  });
+});
 
 // ========================================================================
 // LEGACY REVIEWS API
