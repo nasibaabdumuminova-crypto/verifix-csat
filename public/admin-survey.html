@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=14" />
+<link rel="stylesheet" href="/style.css?v=15" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -38,7 +38,6 @@
           <div class="export-dropdown" id="exportDropdown" hidden>
             <button type="button" data-export="csv">CSV</button>
             <button type="button" data-export="xls">Excel (.xls)</button>
-            <button type="button" data-export="pdf">PDF (печать)</button>
           </div>
         </div>
         <button id="logout" class="btn-ghost">Выйти</button>
@@ -102,7 +101,7 @@
           <div class="stat-sub muted">Удобство веб-версии. Низкие оценки — приоритет для UX-команды.</div>
         </div>
         <div class="stat-card scale-card" data-scale="mobile_ux_score">
-          <div class="stat-label">Мобильное приложение (5.4)</div>
+          <div class="stat-label">Интерфейс мобильного приложения (5.4)</div>
           <div class="stat-value" data-scale-avg>—</div>
           <div class="scale-bar" data-scale-bar></div>
           <div class="scale-legend" data-scale-legend></div>
@@ -172,12 +171,19 @@
     <section class="tab-panel" data-panel="responses" hidden>
       <div class="resp-toolbar">
         <input type="text" id="respFilter" class="text-input" placeholder="Фильтр: компания / ФИО / телефон…" />
+        <select id="respLang" class="text-input" aria-label="Фильтр по языку">
+          <option value="">Все языки</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="uz_cyr">🇺🇿 Ўзбекча (Кирилл)</option>
+          <option value="uz_lat">🇺🇿 Oʻzbekcha (Lotin)</option>
+        </select>
         <select id="respUrgency" class="text-input" aria-label="Фильтр по срочности">
           <option value="">Все срочности</option>
           <option value="high">🔴 Срочно</option>
           <option value="medium">🟡 Обратить внимание</option>
           <option value="low">🟢 Норма</option>
         </select>
+        <div id="activeFilterChip" class="active-filter-chip" hidden></div>
         <div class="col-menu">
           <button type="button" class="btn-ghost" id="colToggle" aria-haspopup="true">Столбцы ▾</button>
           <div class="col-dropdown" id="colDropdown" hidden></div>
@@ -291,6 +297,16 @@ function tr(x, lang='ru') {
   return x[lang] || x.ru || Object.values(x)[0] || '';
 }
 
+// Defensive: render a placeholder if the value contains Unicode replacement
+// characters — those mean the original bytes weren't valid UTF-8 and the
+// data is unrecoverable. Prevents '???????' garbage on screen.
+function safeText(s) {
+  if (s == null) return '';
+  const str = String(s);
+  if (/\uFFFD/.test(str)) return '<span class="muted">[нечитаемо — данные повреждены]</span>';
+  return escapeHtml(str);
+}
+
 const loginScreen = document.getElementById('loginScreen');
 const dashboard = document.getElementById('dashboard');
 
@@ -358,21 +374,41 @@ function renderStats() {
   const langSummary = Object.keys(ld).map((k) => `${LANG_NAMES[k] || k}: ${ld[k]}`).join(' · ');
   document.getElementById('s_lang').textContent = langSummary;
 
-  // NPS colour bar (0-6 det, 7-8 neu, 9-10 pro)
+  // NPS colour bar (0-6 det, 7-8 neu, 9-10 pro). Each zone is clickable —
+  // drills down into the responses table, filtered to that NPS range.
   const total = s.nps.count || 1;
   const pPct = s.nps.promoters / total * 100;
   const nPct = s.nps.neutrals / total * 100;
   const dPct = s.nps.detractors / total * 100;
-  document.getElementById('s_npsBar').innerHTML = `
-    <div class="bar-seg bar-det" style="width:${dPct}%" title="Детракторы 0–6"></div>
-    <div class="bar-seg bar-neu" style="width:${nPct}%" title="Нейтралы 7–8"></div>
-    <div class="bar-seg bar-pro" style="width:${pPct}%" title="Промоутеры 9–10"></div>
+  const npsBar = document.getElementById('s_npsBar');
+  npsBar.innerHTML = `
+    <div class="bar-seg bar-det clickable" style="width:${dPct}%" title="Детракторы 0–6 — клик чтобы посмотреть"></div>
+    <div class="bar-seg bar-neu clickable" style="width:${nPct}%" title="Нейтралы 7–8 — клик чтобы посмотреть"></div>
+    <div class="bar-seg bar-pro clickable" style="width:${pPct}%" title="Промоутеры 9–10 — клик чтобы посмотреть"></div>
   `;
-  document.getElementById('s_npsLegend').innerHTML = `
-    <span><i class="dot det"></i>Детракторы: ${s.nps.detractors}</span>
-    <span><i class="dot neu"></i>Нейтралы: ${s.nps.neutrals}</span>
-    <span><i class="dot pro"></i>Промоутеры: ${s.nps.promoters}</span>
+  const npsLegend = document.getElementById('s_npsLegend');
+  npsLegend.innerHTML = `
+    <span class="clickable" data-nps-zone="det"><i class="dot det"></i>Детракторы: ${s.nps.detractors}</span>
+    <span class="clickable" data-nps-zone="neu"><i class="dot neu"></i>Нейтралы: ${s.nps.neutrals}</span>
+    <span class="clickable" data-nps-zone="pro"><i class="dot pro"></i>Промоутеры: ${s.nps.promoters}</span>
   `;
+  // Wire NPS click handlers — both the colour bar and the legend rows
+  // trigger the same drill-down.
+  const npsZoneFilter = (zone) => {
+    if (zone === 'det') return { label: 'NPS: детракторы (0–6)',
+      test: (_, a) => { const v = Number(a.nps); return Number.isFinite(v) && v <= 6; } };
+    if (zone === 'neu') return { label: 'NPS: нейтралы (7–8)',
+      test: (_, a) => { const v = Number(a.nps); return v === 7 || v === 8; } };
+    return { label: 'NPS: промоутеры (9–10)',
+      test: (_, a) => { const v = Number(a.nps); return v === 9 || v === 10; } };
+  };
+  npsBar.querySelectorAll('.bar-seg').forEach((seg, i) => {
+    const zone = ['det','neu','pro'][i];
+    seg.onclick = () => applyDashFilter(npsZoneFilter(zone));
+  });
+  npsLegend.querySelectorAll('[data-nps-zone]').forEach((el) => {
+    el.onclick = () => applyDashFilter(npsZoneFilter(el.dataset.npsZone));
+  });
 
   // 1–5 scale cards: avg + colour-zoned histogram bar
   const scaleMap = {
@@ -405,6 +441,10 @@ function renderScaleCard(card, breakdown) {
   const avgEl = card.querySelector('[data-scale-avg]');
   const barEl = card.querySelector('[data-scale-bar]');
   const legEl = card.querySelector('[data-scale-legend]');
+  const key = card.dataset.scale;
+  // Human-friendly card label for the filter chip ("CSAT продукт" etc.)
+  const labelEl = card.querySelector('.stat-label');
+  const cardLabel = labelEl ? labelEl.textContent.trim().replace(/\s*\(\d+\.\d+\)\s*$/, '') : key;
   if (!breakdown || !breakdown.count) {
     avgEl.textContent = '—';
     barEl.innerHTML = '';
@@ -417,15 +457,60 @@ function renderScaleCard(card, breakdown) {
   const nPct = breakdown.neutrals  / t * 100;
   const pPct = breakdown.promoters / t * 100;
   barEl.innerHTML = `
-    <div class="bar-seg bar-det" style="width:${dPct}%" title="Оценки 1–2"></div>
-    <div class="bar-seg bar-neu" style="width:${nPct}%" title="Оценка 3"></div>
-    <div class="bar-seg bar-pro" style="width:${pPct}%" title="Оценки 4–5"></div>`;
+    <div class="bar-seg bar-det clickable" style="width:${dPct}%" title="Оценки 1–2"></div>
+    <div class="bar-seg bar-neu clickable" style="width:${nPct}%" title="Оценка 3"></div>
+    <div class="bar-seg bar-pro clickable" style="width:${pPct}%" title="Оценки 4–5"></div>`;
   legEl.innerHTML = `
-    <span><i class="dot det"></i>1–2: ${breakdown.detractors}</span>
-    <span><i class="dot neu"></i>3: ${breakdown.neutrals}</span>
-    <span><i class="dot pro"></i>4–5: ${breakdown.promoters}</span>
+    <span class="clickable" data-scale-zone="det"><i class="dot det"></i>1–2: ${breakdown.detractors}</span>
+    <span class="clickable" data-scale-zone="neu"><i class="dot neu"></i>3: ${breakdown.neutrals}</span>
+    <span class="clickable" data-scale-zone="pro"><i class="dot pro"></i>4–5: ${breakdown.promoters}</span>
     <span class="muted">n=${breakdown.count}</span>`;
+  // Click any zone (bar segment OR legend entry) to drill down into the
+  // matching responses. Predicate filters by the response's value for
+  // this scale's question_key.
+  const zoneFilter = (zone) => {
+    const labels = { det: '1–2 (низкие)', neu: '3 (средние)', pro: '4–5 (высокие)' };
+    const test = (_, a) => {
+      const v = Number(a[key]);
+      if (!Number.isFinite(v)) return false;
+      if (zone === 'det') return v <= 2;
+      if (zone === 'neu') return v === 3;
+      return v >= 4;
+    };
+    return { label: cardLabel + ': ' + labels[zone], test };
+  };
+  barEl.querySelectorAll('.bar-seg').forEach((seg, i) => {
+    const z = ['det','neu','pro'][i];
+    seg.onclick = () => applyDashFilter(zoneFilter(z));
+  });
+  legEl.querySelectorAll('[data-scale-zone]').forEach((el) => {
+    el.onclick = () => applyDashFilter(zoneFilter(el.dataset.scaleZone));
+  });
 }
+
+// Map dashboard element ID → backend question key so we can filter
+// the responses table by the value of that question.
+const DIST_QUESTION_KEY = {
+  s_dist_roi: 'roi_category',
+  s_dist_renewal: 'renewal_intent',
+  s_dist_reference: 'reference_willingness',
+  s_dist_industry: 'industry',
+  s_dist_size: 'company_size',
+  s_dist_mobile: 'mobile_usage',
+  s_dist_callback: 'callback_request',
+  s_dist_headcount: 'headcount_plans',
+};
+// Card labels (used in the filter chip when user clicks a row)
+const DIST_LABEL = {
+  s_dist_roi: 'Окупаемость',
+  s_dist_renewal: 'Намерение продлить',
+  s_dist_reference: 'Готовность рекомендовать',
+  s_dist_industry: 'Отрасль',
+  s_dist_size: 'Размер компании',
+  s_dist_mobile: 'Пользуются мобильной',
+  s_dist_callback: 'Запрос звонка',
+  s_dist_headcount: 'Планы по штату',
+};
 
 function fillDist(id, dist) {
   const el = document.getElementById(id);
@@ -433,16 +518,32 @@ function fillDist(id, dist) {
   const entries = Object.entries(dist || {}).sort((a, b) => b[1] - a[1]);
   const total = entries.reduce((s, [, n]) => s + n, 0);
   if (!total) { el.innerHTML = '<div class="muted">Нет данных</div>'; return; }
-  el.innerHTML = entries.map(([k, n]) => {
+  const qKey = DIST_QUESTION_KEY[id];
+  const cardLabel = DIST_LABEL[id] || id;
+  el.innerHTML = entries.map(([k, n], idx) => {
     const pct = Math.round(n / total * 100);
-    const label = /\uFFFD|^\s*$/.test(k) ? '<span class="muted">(данные повреждены)</span>' : escapeHtml(k);
     return `
-      <div class="dist-row">
-        <div class="dist-label">${label}</div>
+      <div class="dist-row clickable" data-dist-idx="${idx}">
+        <div class="dist-label">${escapeHtml(k)}</div>
         <div class="dist-bar"><div class="dist-fill" style="width:${pct}%"></div></div>
         <div class="dist-n">${n} · ${pct}%</div>
       </div>`;
   }).join('');
+  // Wire each row to drill-down the responses table by exact value match
+  // (or membership for array-typed answers like checkboxes).
+  if (qKey) {
+    el.querySelectorAll('.dist-row').forEach((row, idx) => {
+      const val = entries[idx][0];
+      row.onclick = () => applyDashFilter({
+        label: cardLabel + ': ' + val,
+        test: (_, a) => {
+          const x = a[qKey];
+          if (Array.isArray(x)) return x.map(String).includes(String(val));
+          return String(x) === String(val);
+        },
+      });
+    });
+  }
 }
 
 // ========== RESPONSES ==========
@@ -516,8 +617,38 @@ const URGENCY_META = {
 
 const respFilter = document.getElementById('respFilter');
 const respUrgencyFilter = document.getElementById('respUrgency');
+const respLangFilter = document.getElementById('respLang');
 respFilter.addEventListener('input', renderResponses);
 respUrgencyFilter.addEventListener('change', renderResponses);
+respLangFilter.addEventListener('change', renderResponses);
+
+// Drill-down filter from dashboard clicks. When the user clicks on
+// e.g. an NPS detractor segment, we set state.dashFilter, switch to
+// the Responses tab, and only show responses matching the predicate.
+state.dashFilter = null;  // { label, test: (r, a) => bool }
+
+function applyDashFilter(filter) {
+  state.dashFilter = filter;
+  // Switch to Ответы tab programmatically
+  const respTab = document.querySelector('.tab[data-tab="responses"]');
+  if (respTab) respTab.click();
+  renderResponses();
+}
+
+function clearDashFilter() {
+  state.dashFilter = null;
+  renderResponses();
+}
+
+function renderActiveFilterChip() {
+  const el = document.getElementById('activeFilterChip');
+  if (!el) return;
+  if (!state.dashFilter) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  el.innerHTML = `<span>Фильтр: <b>${escapeHtml(state.dashFilter.label)}</b></span>` +
+                 `<button type="button" class="filter-chip-x" id="clearDashFilter" title="Сбросить фильтр">✕</button>`;
+  document.getElementById('clearDashFilter').onclick = clearDashFilter;
+}
 
 // Build the column-visibility dropdown once.
 (function buildColMenu() {
@@ -554,13 +685,19 @@ function renderResponses() {
     return { r, a, u: urgencyOf(r) };
   });
 
-  const list = enriched.filter(({ r, u }) => {
+  const lang = respLangFilter.value;
+  const dashFilter = state.dashFilter;
+  const list = enriched.filter(({ r, a, u }) => {
     if (urg && u !== urg) return false;
+    if (lang && r.language !== lang) return false;
+    if (dashFilter && typeof dashFilter.test === 'function' && !dashFilter.test(r, a)) return false;
     if (!f) return true;
     return (r.company_name || '').toLowerCase().includes(f) ||
            (r.contact_name || '').toLowerCase().includes(f) ||
            (r.phone || '').toLowerCase().includes(f);
   });
+
+  renderActiveFilterChip();
 
   // Sort by urgency (high → medium → low), then newest first
   const urgOrder = { high: 0, medium: 1, low: 2 };
@@ -584,15 +721,15 @@ function renderResponses() {
         const m = URGENCY_META[u];
         return `<span class="urg urg-${u}" title="${escapeAttr(m.title)}">${m.dot}</span>`;
       }
-      case 'company':  return `<strong>${escapeHtml(r.company_name || '')}</strong>`;
-      case 'contact':  return escapeHtml(r.contact_name || '—');
-      case 'phone':    return r.phone ? `<a href="tel:${escapeAttr(String(r.phone).replace(/\s+/g, ''))}">${escapeHtml(r.phone)}</a>` : '—';
-      case 'position': return escapeHtml(r.position || '—');
+      case 'company':  return `<strong>${safeText(r.company_name || '')}</strong>`;
+      case 'contact':  return safeText(r.contact_name || '—');
+      case 'phone':    return r.phone ? `<a href="tel:${escapeAttr(String(r.phone).replace(/\s+/g, ''))}">${safeText(r.phone)}</a>` : '—';
+      case 'position': return safeText(r.position || '—');
       case 'nps':      return cellScore(a.nps, 0, 6);
       case 'csat':     return cellScore(a.csat_product, 1, 2);
       case 'support':  return cellScore(a.support_score, 1, 2);
-      case 'renewal':  return escapeHtml(a.renewal_intent || '—');
-      case 'callback': return a.callback_request ? escapeHtml(String(a.callback_request)) : '—';
+      case 'renewal':  return safeText(a.renewal_intent || '—');
+      case 'callback': return a.callback_request ? safeText(String(a.callback_request)) : '—';
       case 'lang':     return escapeHtml(LANG_NAMES[r.language] || r.language || 'ru');
       case 'date':     return `<span class="muted">${new Date(r.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' })}</span>`;
       default: return '';
@@ -602,18 +739,23 @@ function renderResponses() {
   body.innerHTML = list.map((ctx, i) => {
     const row = '<tr class="resp-row" data-idx="' + i + '">' +
       activeCols.map((c) => `<td>${cellFor(c.id, ctx)}</td>`).join('') +
-      '<td class="col-expand"><button type="button" class="btn-ghost btn-expand" data-idx="' + i + '">▼</button></td>' +
+      '<td class="col-expand">' +
+        '<button type="button" class="btn-ghost btn-expand" data-idx="' + i + '" title="Развернуть">▼</button> ' +
+        '<button type="button" class="btn-row-delete" data-del-id="' + ctx.r.id + '" title="Удалить эту анкету">🗑</button>' +
+      '</td>' +
       '</tr>';
     // Expanded row with all answers (full detail). Hidden by default.
+    // safeText() renders [нечитаемо] for any value containing Unicode
+    // replacement chars (legacy corrupt rows from a buggy ingest path).
     const answers = ctx.r.answers.map((an) => {
       const q = qByKey.get(an.question_key);
       const title = q ? tr(q.title, 'ru') : an.question_key;
       const v = Array.isArray(an.value) ? an.value.join(', ')
               : (an.value == null ? '—' : String(an.value));
-      return `<div class="a-row"><div class="a-q">${escapeHtml(title)}</div><div class="a-v">${escapeHtml(v)}</div></div>`;
+      return `<div class="a-row"><div class="a-q">${escapeHtml(title)}</div><div class="a-v">${safeText(v)}</div></div>`;
     }).join('');
     const detail = '<tr class="resp-detail" data-detail="' + i + '" hidden><td colspan="' + (activeCols.length + 1) + '">' +
-      (ctx.r.position ? `<div class="a-row"><div class="a-q">Должность</div><div class="a-v">${escapeHtml(ctx.r.position)}</div></div>` : '') +
+      (ctx.r.position ? `<div class="a-row"><div class="a-q">Должность</div><div class="a-v">${safeText(ctx.r.position)}</div></div>` : '') +
       answers + '</td></tr>';
     return row + detail;
   }).join('');
@@ -627,6 +769,19 @@ function renderResponses() {
         row.hidden = !row.hidden;
         btn.textContent = row.hidden ? '▼' : '▲';
       }
+    });
+  });
+
+  // Wire per-row delete buttons. Confirms first to avoid accidental clicks
+  // (the trash icon sits right next to the expand arrow).
+  body.querySelectorAll('.btn-row-delete').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.delId;
+      if (!confirm('Удалить эту анкету? Действие необратимое.')) return;
+      const r = await authedFetch('/api/admin/survey/responses/' + id, { method: 'DELETE' });
+      if (!r.ok) return alert('Не удалось удалить (HTTP ' + r.status + ')');
+      // Refresh the local cache + re-render.
+      await loadAll();
     });
   });
 }
@@ -883,12 +1038,6 @@ document.getElementById('modalForm').addEventListener('submit', async (e) => {
     const fmt = e.target.dataset.export;
     if (!fmt) return;
     dd.hidden = true;
-    if (fmt === 'pdf') {
-      // Browser's "Save as PDF" via print dialog. Our print stylesheet hides
-      // the header/tabs/exports so only the current tab content prints.
-      window.print();
-      return;
-    }
     const ext = fmt === 'xls' ? 'xls' : 'csv';
     const r = await authedFetch('/api/admin/survey/export.' + ext);
     if (!r.ok) return alert('Не удалось экспортировать');
@@ -937,6 +1086,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=14"></script>
+<script src="/stars.js?v=15"></script>
 </body>
 </html>
