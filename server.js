@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -869,43 +871,180 @@ app.get('/api/admin/survey/export.csv', requireAuth, async (req, res) => {
   }
 });
 
-// Excel export — we ship an HTML table with a .xls extension.
-// Excel / LibreOffice Calc / Google Sheets all open this cleanly and
-// preserve Unicode, unlike CSV which needs a BOM for Cyrillic. This
-// avoids pulling in a heavy xlsx dependency.
-app.get('/api/admin/survey/export.xls', requireAuth, async (req, res) => {
+// Real Excel export — generates a proper .xlsx via exceljs. Replaces
+// the old "HTML pretending to be .xls" trick which made Excel show
+// "this file's format doesn't match its extension" warning every open.
+app.get('/api/admin/survey/export.xlsx', requireAuth, async (req, res) => {
   try {
     const [responses, questions] = await Promise.all([
       getAllResponses(),
       getAllQuestions({ includeDeleted: true }),
     ]);
-    const esc = (s) => {
-      if (s === null || s === undefined) return '';
-      const str = Array.isArray(s) ? s.join(' | ') : String(s);
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    };
-    const header = ['ID', 'Дата', 'Язык', 'Компания', 'ФИО', 'Должность', 'Телефон',
-                    ...questions.map((q) => (q.title && q.title.ru) || q.key)];
-    const rows = responses.map((r) => {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Verifix';
+    wb.created = new Date();
+
+    // Sheet 1: responses (rows = clients, cols = identity + each question)
+    const ws = wb.addWorksheet('Ответы');
+    const cols = [
+      { header: 'ID',         key: 'id',           width: 6  },
+      { header: 'Дата',       key: 'created_at',   width: 18 },
+      { header: 'Язык',       key: 'language',     width: 10 },
+      { header: 'Компания',   key: 'company_name', width: 28 },
+      { header: 'ФИО',        key: 'contact_name', width: 24 },
+      { header: 'Должность',  key: 'position',     width: 22 },
+      { header: 'Телефон',    key: 'phone',        width: 18 },
+      ...questions.map((q) => ({
+        header: (q.title && q.title.ru) || q.key,
+        key: q.key,
+        width: 28,
+      })),
+    ];
+    ws.columns = cols;
+
+    for (const r of responses) {
       const byKey = new Map(r.answers.map((a) => [a.question_key, a.value]));
-      return [r.id, r.created_at, r.language || 'ru',
-              r.company_name, r.contact_name || '', r.position || '', r.phone || '',
-              ...questions.map((q) => byKey.get(q.key))];
-    });
-    const html =
-      '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
-      '<head><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"/></head>' +
-      '<body><table border="1" cellspacing="0">' +
-      '<tr>' + header.map((h) => `<th>${esc(h)}</th>`).join('') + '</tr>' +
-      rows.map((row) => '<tr>' + row.map((v) => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') +
-      '</table></body></html>';
-    res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="verifix_survey.xls"');
-    res.send('\uFEFF' + html);
+      const row = {
+        id: r.id,
+        created_at: r.created_at ? new Date(r.created_at).toLocaleString('ru-RU') : '',
+        language: r.language || 'ru',
+        company_name: r.company_name || '',
+        contact_name: r.contact_name || '',
+        position: r.position || '',
+        phone: r.phone || '',
+      };
+      for (const q of questions) {
+        const v = byKey.get(q.key);
+        row[q.key] = Array.isArray(v) ? v.join(' | ') : (v == null ? '' : String(v));
+      }
+      ws.addRow(row);
+    }
+    // Header bold + freeze top row + autofilter
+    ws.getRow(1).font = { bold: true };
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+    ws.autoFilter = { from: 'A1', to: { row: 1, column: cols.length } };
+
+    res.setHeader('Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="verifix_survey.xlsx"');
+    await wb.xlsx.write(res);
+    res.end();
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// PDF export — single page summary with stats + a table of all responses.
+// Uses pdfkit + a bundled Roboto TTF that has full Cyrillic coverage so
+// company names / answer text in Russian/Uzbek render correctly.
+const FONT_REGULAR = path.join(__dirname, 'assets', 'Roboto-Regular.ttf');
+app.get('/api/admin/survey/export.pdf', requireAuth, async (req, res) => {
+  try {
+    const [responses, questions, statsAll] = await Promise.all([
+      getAllResponses(),
+      getAllQuestions({ includeDeleted: true }),
+      getAllResponses().then((r) => computeStats(r)),
+    ]);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="verifix_survey.pdf"');
+
+    const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 36 });
+    doc.pipe(res);
+    if (fs.existsSync(FONT_REGULAR)) doc.registerFont('Roboto', FONT_REGULAR);
+    const FONT = fs.existsSync(FONT_REGULAR) ? 'Roboto' : 'Helvetica';
+    doc.font(FONT);
+
+    // ---- Header / cover ----
+    doc.fontSize(20).text('Verifix — Опросник клиентов', { align: 'left' });
+    doc.fontSize(10).fillColor('#666')
+       .text(`Сформировано: ${new Date().toLocaleString('ru-RU')}`)
+       .text(`Всего ответов: ${statsAll.totalResponses}`);
+    doc.moveDown(0.5);
+
+    // ---- Summary metrics ----
+    doc.fillColor('#000').fontSize(14).text('Ключевые метрики', { underline: true });
+    doc.moveDown(0.3);
+    doc.fontSize(11);
+    const lines = [
+      `NPS: ${statsAll.nps.score == null ? '—' : statsAll.nps.score}    ` +
+        `Промоутеров: ${statsAll.nps.promoters} · Нейтралов: ${statsAll.nps.neutrals} · Детракторов: ${statsAll.nps.detractors}`,
+      `CSAT продукт: ${statsAll.csatProduct.avg ?? '—'} (n=${statsAll.csatProduct.count})`,
+      `Веб-интерфейс: ${statsAll.scales.web_ux_score.avg ?? '—'} (n=${statsAll.scales.web_ux_score.count})`,
+      `Мобильное приложение: ${statsAll.scales.mobile_ux_score.avg ?? '—'} (n=${statsAll.scales.mobile_ux_score.count})`,
+      `Поддержка: ${statsAll.scales.support_score.avg ?? '—'} (n=${statsAll.scales.support_score.count})`,
+      `Менеджер: ${statsAll.scales.manager_score.avg ?? '—'} (n=${statsAll.scales.manager_score.count})`,
+    ];
+    for (const l of lines) doc.text(l);
+    doc.moveDown(0.6);
+
+    // ---- Responses table ----
+    doc.fontSize(14).text('Ответы клиентов', { underline: true });
+    doc.moveDown(0.3);
+
+    const colsT = [
+      { label: 'Дата',     w: 65,  get: (r) => r.created_at ? new Date(r.created_at).toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }) : '' },
+      { label: 'Компания', w: 130, get: (r) => r.company_name || '' },
+      { label: 'ФИО',      w: 110, get: (r) => r.contact_name || '' },
+      { label: 'Телефон',  w: 90,  get: (r) => r.phone || '' },
+      { label: 'Язык',     w: 50,  get: (r) => r.language || 'ru' },
+      { label: 'NPS',      w: 30,  get: (r) => valOf(r, 'nps') },
+      { label: 'CSAT',     w: 30,  get: (r) => valOf(r, 'csat_product') },
+      { label: 'Поддержка',w: 50,  get: (r) => valOf(r, 'support_score') },
+      { label: 'Продление',w: 110, get: (r) => valOf(r, 'renewal_intent') },
+      { label: 'Звонок',   w: 50,  get: (r) => valOf(r, 'callback_request') },
+    ];
+    function valOf(r, key) {
+      const a = r.answers.find((x) => x.question_key === key);
+      if (!a || a.value == null) return '';
+      const v = Array.isArray(a.value) ? a.value.join(', ') : String(a.value);
+      // Replace mojibake to keep PDF clean
+      return /\uFFFD/.test(v) ? '[нечитаемо]' : v;
+    }
+    function drawRow(y, cells, opts = {}) {
+      let x = doc.page.margins.left;
+      doc.fontSize(opts.bold ? 9.5 : 9);
+      for (let i = 0; i < cells.length; i++) {
+        doc.text(String(cells[i] ?? ''), x + 4, y + 4, {
+          width: colsT[i].w - 8,
+          height: opts.rowHeight - 4,
+          ellipsis: true,
+        });
+        x += colsT[i].w;
+      }
+    }
+    function drawHeader(y) {
+      let x = doc.page.margins.left;
+      const totalW = colsT.reduce((s, c) => s + c.w, 0);
+      doc.rect(x, y, totalW, 18).fill('#3C3489');
+      doc.fillColor('#fff');
+      drawRow(y, colsT.map((c) => c.label), { bold: true, rowHeight: 18 });
+      doc.fillColor('#000');
+      return y + 18;
+    }
+
+    const rowHeight = 22;
+    let y = drawHeader(doc.y);
+    for (const r of responses) {
+      // New page if we run out of room
+      if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage({ size: 'A4', layout: 'landscape', margin: 36 });
+        y = drawHeader(doc.page.margins.top);
+      }
+      drawRow(y, colsT.map((c) => c.get(r)), { rowHeight });
+      // Bottom border
+      const totalW = colsT.reduce((s, c) => s + c.w, 0);
+      doc.strokeColor('#ddd').moveTo(doc.page.margins.left, y + rowHeight)
+         .lineTo(doc.page.margins.left + totalW, y + rowHeight).stroke();
+      y += rowHeight;
+    }
+
+    doc.end();
+  } catch (err) {
+    console.error('PDF export error:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Ошибка PDF' });
+    else res.end();
   }
 });
 

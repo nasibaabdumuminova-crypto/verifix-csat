@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=15" />
+<link rel="stylesheet" href="/style.css?v=16" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -37,7 +37,8 @@
           <button class="btn-ghost" id="exportToggle" aria-haspopup="true" aria-expanded="false">Экспорт ▾</button>
           <div class="export-dropdown" id="exportDropdown" hidden>
             <button type="button" data-export="csv">CSV</button>
-            <button type="button" data-export="xls">Excel (.xls)</button>
+            <button type="button" data-export="xlsx">Excel (.xlsx)</button>
+            <button type="button" data-export="pdf">PDF</button>
           </div>
         </div>
         <button id="logout" class="btn-ghost">Выйти</button>
@@ -1038,13 +1039,12 @@ document.getElementById('modalForm').addEventListener('submit', async (e) => {
     const fmt = e.target.dataset.export;
     if (!fmt) return;
     dd.hidden = true;
-    const ext = fmt === 'xls' ? 'xls' : 'csv';
-    const r = await authedFetch('/api/admin/survey/export.' + ext);
-    if (!r.ok) return alert('Не удалось экспортировать');
+    const r = await authedFetch('/api/admin/survey/export.' + fmt);
+    if (!r.ok) return alert('Не удалось экспортировать (HTTP ' + r.status + ')');
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'verifix_survey.' + ext; a.click();
+    a.href = url; a.download = 'verifix_survey.' + fmt; a.click();
     URL.revokeObjectURL(url);
   });
 })();
@@ -1086,6 +1086,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=15"></script>
+<script src="/stars.js?v=16"></script>
 </body>
 </html>
