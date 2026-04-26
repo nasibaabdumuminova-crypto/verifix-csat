@@ -1044,8 +1044,30 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   vertical-align: top;
 }
 .resp-row:hover td { background: rgba(255, 255, 255, 0.04); }
-.resp-table td.col-expand { width: 40px; text-align: center; }
+.resp-table td.col-expand { width: 80px; text-align: center; white-space: nowrap; }
 .resp-table .btn-expand { padding: 4px 8px; min-height: auto; }
+
+/* Actions column (▼ expand + 🗑 delete) is sticky to the right edge so
+   it's always visible no matter how many columns are turned on or how
+   far the operator has scrolled horizontally. */
+.resp-table th.col-actions-th,
+.resp-table td.col-expand {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: rgba(42, 37, 96, 0.98);  /* same dark purple as the header strip */
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -8px 0 12px -8px rgba(0, 0, 0, 0.45);  /* soft shadow hint that there's more behind */
+}
+/* Slightly darker bg for body rows so it visually pairs with row content */
+.resp-table tbody td.col-expand {
+  background: rgba(40, 34, 92, 0.97);
+}
+.resp-row:hover td.col-expand {
+  background: rgba(60, 52, 137, 1);  /* match the row hover purple */
+}
+/* In the expanded detail row, the sticky actions column should also stay visible */
+.resp-detail td.col-expand { display: none; }
 
 /* Phone tel: links — keep them white like the rest of the row text,
    not the default blue browser hyperlink colour. Underline on hover

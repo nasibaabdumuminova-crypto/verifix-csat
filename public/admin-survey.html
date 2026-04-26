@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=18" />
+<link rel="stylesheet" href="/style.css?v=19" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -767,7 +767,7 @@ function renderResponses() {
     activeCols.map((c) =>
       `<th draggable="true" data-col-id="${c.id}" title="Перетащите для переноса">${escapeHtml(c.label)}</th>`
     ).join('') +
-    '<th></th></tr>';
+    '<th class="col-actions-th"></th></tr>';
 
   // Drag-drop wiring (header reorder)
   let dragId = null;
@@ -1178,6 +1178,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=18"></script>
+<script src="/stars.js?v=19"></script>
 </body>
 </html>
