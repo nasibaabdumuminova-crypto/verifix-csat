@@ -1114,6 +1114,35 @@ textarea.text-input { resize: vertical; min-height: 70px; }
   border-radius: 4px;
 }
 .btn-row-delete:hover { background: rgba(255, 80, 80, 0.18); color: #ff8a8a; }
+
+/* === Read-only "viewer" role — hide every control that mutates state ===
+   The role-viewer class is added to <body> when /api/admin/whoami says
+   the operator is a viewer. */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  margin-left: 12px;
+}
+.role-viewer-badge {
+  background: rgba(123, 63, 242, 0.22);
+  border: 1px solid rgba(123, 63, 242, 0.55);
+  color: #d6c6ff;
+}
+.role-viewer .btn-row-delete,
+.role-viewer .btn-row-delete + *,                  /* gap after icon */
+.role-viewer #addQuestionBtn,
+.role-viewer .q-row-actions,
+.role-viewer .tab[data-tab="questions"] {
+  display: none !important;
+}
+/* Spacing fix: keep the expand-▼ button centred when delete is hidden */
+.role-viewer .resp-table td.col-expand { text-align: center; }
 .resp-detail td {
   background: rgba(0, 0, 0, 0.15);
   padding: 14px 20px !important;

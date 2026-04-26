@@ -17,6 +17,13 @@ const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '123').trim();
 // To remove: delete this constant and the OR-check in checkAuth() below,
 // then commit. Hardcoded value is intentionally NOT secret-grade.
 const ADMIN_PASSWORD_RECOVERY = 'verifix-admin-26';
+
+// Read-only viewer password (optional) — set in Railway env var
+// `ADMIN_PASSWORD_VIEWER`. People who log in with this password can
+// see the dashboard, the responses table, and export data, but CANNOT
+// delete responses, add/edit/delete questions, or otherwise mutate state.
+// Leave the env var unset to disable the role entirely.
+const ADMIN_PASSWORD_VIEWER = String(process.env.ADMIN_PASSWORD_VIEWER || '').trim();
 const USE_DB = !!process.env.DATABASE_URL;
 
 // Storage abstraction: PostgreSQL in production, in-memory fallback for local preview.
@@ -603,16 +610,30 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Returns the role of the authenticated user: 'admin', 'viewer', or null.
+// Trims whitespace because password managers / Railway env-var pasting
+// sometimes leave trailing spaces that lock people out otherwise.
 function checkAuth(req) {
   const raw = req.query.password || req.headers['x-admin-password'] || (req.body && req.body.password);
-  // Trim client-side whitespace too — some browsers trail a space on
-  // auto-fill / password managers and we don't want that locking anyone out.
   const pwd = raw == null ? '' : String(raw).trim();
-  if (!pwd) return false;
-  return pwd === ADMIN_PASSWORD || pwd === ADMIN_PASSWORD_RECOVERY;
+  if (!pwd) return null;
+  if (pwd === ADMIN_PASSWORD || pwd === ADMIN_PASSWORD_RECOVERY) return 'admin';
+  if (ADMIN_PASSWORD_VIEWER && pwd === ADMIN_PASSWORD_VIEWER) return 'viewer';
+  return null;
 }
+// Any authenticated role can read.
 function requireAuth(req, res, next) {
-  if (!checkAuth(req)) return res.status(401).json({ error: 'Неверный пароль' });
+  const role = checkAuth(req);
+  if (!role) return res.status(401).json({ error: 'Неверный пароль' });
+  req.userRole = role;
+  next();
+}
+// Mutation endpoints require admin specifically — viewer is rejected with 403.
+function requireAdmin(req, res, next) {
+  const role = checkAuth(req);
+  if (!role) return res.status(401).json({ error: 'Неверный пароль' });
+  if (role !== 'admin') return res.status(403).json({ error: 'Нужны полные права (только просмотр)' });
+  req.userRole = role;
   next();
 }
 
@@ -634,6 +655,7 @@ app.get('/api/admin/pwd-fingerprint', (req, res) => {
   res.json({
     primary:  fp(ADMIN_PASSWORD),
     recovery: fp(ADMIN_PASSWORD_RECOVERY),
+    viewer:   ADMIN_PASSWORD_VIEWER ? fp(ADMIN_PASSWORD_VIEWER) : { configured: false },
     note: 'Сравните длину/первый-последний символ с тем что вы вводите. Не совпадает — где-то опечатка.',
   });
 });
@@ -741,6 +763,12 @@ app.post('/api/survey/responses', async (req, res) => {
 // ========================================================================
 // SURVEY ADMIN API
 // ========================================================================
+// Tells the client what role they're authenticated as. Client uses
+// this to hide destructive controls (delete, edit, add) for viewers.
+app.get('/api/admin/whoami', requireAuth, (req, res) => {
+  res.json({ role: req.userRole, viewerEnabled: !!ADMIN_PASSWORD_VIEWER });
+});
+
 app.get('/api/admin/survey/stats', requireAuth, async (req, res) => {
   try {
     const responses = await getAllResponses();
@@ -762,7 +790,7 @@ app.get('/api/admin/survey/questions', requireAuth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
-app.post('/api/admin/survey/questions', requireAuth, async (req, res) => {
+app.post('/api/admin/survey/questions', requireAdmin, async (req, res) => {
   try {
     const q = req.body || {};
     if (!q.key || !q.title || !q.type || !q.step_number || !q.step_title) {
@@ -788,7 +816,7 @@ app.post('/api/admin/survey/questions', requireAuth, async (req, res) => {
   }
 });
 
-app.put('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
+app.put('/api/admin/survey/questions/:id', requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const q = req.body || {};
@@ -813,7 +841,7 @@ app.put('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
   }
 });
 
-app.delete('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
+app.delete('/api/admin/survey/questions/:id', requireAdmin, async (req, res) => {
   try {
     await deleteQuestion(parseInt(req.params.id, 10));
     res.json({ ok: true });
@@ -822,7 +850,7 @@ app.delete('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
 
 // Delete a single survey response (e.g. corrupt test data). Cascades to
 // the answers via the FK ON DELETE CASCADE. Memory-store path mirrors.
-app.delete('/api/admin/survey/responses/:id', requireAuth, async (req, res) => {
+app.delete('/api/admin/survey/responses/:id', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'Неверный id' });
   try {
