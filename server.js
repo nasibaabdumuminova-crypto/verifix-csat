@@ -555,14 +555,16 @@ function computeStats(responses) {
     return /\uFFFD/.test(str) || str.trim() === '';
   };
   const distribution = (key) => {
+    // Quietly drop corrupt values — they used to be surfaced as a
+    // "(данные повреждены)" row in the dashboard, but that polluted
+    // every distribution chart with the same noise. Bad data still
+    // lives in the DB row and can be deleted from the responses tab.
     const out = {};
-    let corruptCount = 0;
     for (const v of valByKey(key)) {
       const raw = Array.isArray(v) ? '—' : String(v);
-      if (looksCorrupt(raw)) { corruptCount += 1; continue; }
+      if (looksCorrupt(raw)) continue;
       out[raw] = (out[raw] || 0) + 1;
     }
-    if (corruptCount > 0) out['(данные повреждены)'] = corruptCount;
     return out;
   };
 
@@ -813,6 +815,24 @@ app.delete('/api/admin/survey/questions/:id', requireAuth, async (req, res) => {
   try {
     await deleteQuestion(parseInt(req.params.id, 10));
     res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
+});
+
+// Delete a single survey response (e.g. corrupt test data). Cascades to
+// the answers via the FK ON DELETE CASCADE. Memory-store path mirrors.
+app.delete('/api/admin/survey/responses/:id', requireAuth, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'Неверный id' });
+  try {
+    if (USE_DB) {
+      const r = await pool.query('DELETE FROM survey_responses WHERE id = $1', [id]);
+      return res.json({ ok: true, deleted: r.rowCount });
+    } else {
+      const before = memStore.responses.length;
+      memStore.responses = memStore.responses.filter((r) => r.id !== id);
+      memStore.answers = memStore.answers.filter((a) => a.response_id !== id);
+      return res.json({ ok: true, deleted: before - memStore.responses.length });
+    }
   } catch (err) { console.error(err); res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
