@@ -577,11 +577,23 @@ function computeStats(responses) {
     return out;
   };
 
-  // Language distribution
+  // Language distribution (from r.language, not from answers)
   const langDist = {};
   for (const r of responses) {
     const l = r.language || 'ru';
     langDist[l] = (langDist[l] || 0) + 1;
+  }
+
+  // Position distribution — same trick as language: comes from
+  // `r.position` (column on survey_responses), NOT from the answers
+  // table. We normalise blank/null to "(не указана)" so the chart
+  // doesn't show an empty row.
+  const positionDist = {};
+  for (const r of responses) {
+    const raw = r.position == null ? '' : String(r.position).trim();
+    if (looksCorrupt(raw)) continue;
+    const key = raw || '(не указана)';
+    positionDist[key] = (positionDist[key] || 0) + 1;
   }
 
   return {
@@ -598,6 +610,7 @@ function computeStats(responses) {
       callback_request: distribution('callback_request'),
       headcount_plans: distribution('headcount_plans'),
       reference_willingness: distribution('reference_willingness'),
+      position: positionDist,
     },
     languageDistribution: langDist,
   };
@@ -767,6 +780,76 @@ app.post('/api/survey/responses', async (req, res) => {
 // this to hide destructive controls (delete, edit, add) for viewers.
 app.get('/api/admin/whoami', requireAuth, (req, res) => {
   res.json({ role: req.userRole, viewerEnabled: !!ADMIN_PASSWORD_VIEWER });
+});
+
+// EMERGENCY FORENSIC ENDPOINT — try to read deleted rows from disk
+// (PostgreSQL keeps deleted tuples on disk as "dead tuples" until VACUUM
+// reclaims the space). Uses the pageinspect contrib extension if it's
+// available on the managed Postgres provider.
+//
+// This is an emergency one-off recovery tool. Not exposed in UI.
+// Will be removed after recovery succeeds or is confirmed impossible.
+app.get('/api/admin/_forensic/dead-tuples', requireAdmin, async (req, res) => {
+  if (!USE_DB) return res.json({ error: 'No DB available (in-memory mode)' });
+  const out = {
+    alive: null, pages: null, deadCount: 0, tuples: [],
+    extensionStatus: 'unknown', errors: [],
+  };
+  try {
+    // Step 1: how many alive rows now?
+    const alive = await pool.query('SELECT COUNT(*)::int AS n FROM survey_responses');
+    out.alive = alive.rows[0].n;
+
+    // Step 2: try to install pageinspect (contrib, usually pre-allowed)
+    try {
+      await pool.query('CREATE EXTENSION IF NOT EXISTS pageinspect');
+      out.extensionStatus = 'pageinspect ready';
+    } catch (e) {
+      out.extensionStatus = 'pageinspect denied';
+      out.errors.push('CREATE EXTENSION: ' + e.message);
+    }
+
+    // Step 3: how big is the table file?
+    const sz = await pool.query(
+      `SELECT relname, relpages, pg_size_pretty(pg_relation_size(oid)) as size
+       FROM pg_class WHERE relname IN ('survey_responses', 'survey_answers')`
+    );
+    out.pages = sz.rows;
+
+    // Step 4: read every page, find tuples (alive AND dead)
+    if (out.extensionStatus === 'pageinspect ready') {
+      for (const tbl of ['survey_responses', 'survey_answers']) {
+        const pageInfo = sz.rows.find((r) => r.relname === tbl);
+        if (!pageInfo || pageInfo.relpages === 0) continue;
+        for (let p = 0; p < pageInfo.relpages; p++) {
+          try {
+            // For each item on the page: lp_flags=1 means alive, lp_flags=0 means dead/free.
+            // t_xmax > 0 = row was deleted by transaction t_xmax.
+            // We want all tuples where t_data is NOT null AND t_xmax > 0 (recently deleted).
+            const r = await pool.query(
+              `SELECT lp, lp_off, lp_flags, lp_len, t_xmin, t_xmax,
+                      t_ctid::text AS t_ctid,
+                      octet_length(t_data) AS data_len,
+                      encode(t_data, 'escape') AS data_text,
+                      encode(t_data, 'hex') AS data_hex
+               FROM heap_page_items(get_raw_page($1, $2))
+               WHERE t_data IS NOT NULL`,
+              [tbl, p]
+            );
+            for (const row of r.rows) {
+              out.tuples.push({ table: tbl, page: p, ...row });
+              if (row.t_xmax !== '0') out.deadCount += 1;
+            }
+          } catch (e) {
+            out.errors.push(`${tbl} page ${p}: ${e.message}`);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    out.errors.push('outer: ' + e.message);
+  }
+  res.json(out);
 });
 
 app.get('/api/admin/survey/stats', requireAuth, async (req, res) => {
