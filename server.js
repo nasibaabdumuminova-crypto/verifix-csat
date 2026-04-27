@@ -133,9 +133,12 @@ async function initDb() {
       position TEXT,
       phone TEXT,
       language TEXT NOT NULL DEFAULT 'ru',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      deleted_at TIMESTAMPTZ
     );
   `);
+  // Soft-delete column added later — make sure existing prod tables get it
+  try { await pool.query(`ALTER TABLE survey_responses ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`); } catch (_) {}
   await pool.query(`
     CREATE TABLE IF NOT EXISTS survey_answers (
       id SERIAL PRIMARY KEY,
@@ -427,7 +430,10 @@ async function insertResponse(payload) {
 
 async function getAllResponses() {
   if (USE_DB) {
-    const resp = await pool.query('SELECT * FROM survey_responses ORDER BY created_at DESC');
+    // Filter out soft-deleted rows so they don't pollute the dashboard
+    // or response lists. Deleted rows stay in the DB and can be brought
+    // back by clearing deleted_at.
+    const resp = await pool.query('SELECT * FROM survey_responses WHERE deleted_at IS NULL ORDER BY created_at DESC');
     const answers = await pool.query('SELECT * FROM survey_answers');
     const byResp = {};
     for (const a of answers.rows) {
@@ -782,259 +788,6 @@ app.get('/api/admin/whoami', requireAuth, (req, res) => {
   res.json({ role: req.userRole, viewerEnabled: !!ADMIN_PASSWORD_VIEWER });
 });
 
-// Decode a PostgreSQL row's t_data buffer field-by-field. Each text/jsonb
-// field starts with a varlena header — either a 1-byte short header
-// where the low bit is 1 and length = (b>>1)&0x7F (length includes the
-// header itself), or a 4-byte header for longer fields. We only handle
-// the common 1-byte case here because survey rows are small.
-//
-// Schema-aware: caller passes ['int4', 'text', 'text', ..., 'timestamptz']
-// matching the column order. Returns { values: [...], remaining: Buffer }.
-function decodeTuple(buf, schema) {
-  let pos = 0;
-  const out = [];
-  const align = (a) => { while (pos % a !== 0) pos += 1; };
-  for (const t of schema) {
-    if (t === 'int4') {
-      align(4);
-      if (pos + 4 > buf.length) { out.push(null); break; }
-      out.push(buf.readInt32LE(pos)); pos += 4;
-    } else if (t === 'text' || t === 'jsonb') {
-      // Skip alignment byte if present (text is byte-aligned but PG still
-      // pads sometimes — try both with and without skip)
-      if (pos >= buf.length) { out.push(null); break; }
-      let h = buf[pos];
-      // Pad zeros are common; skip up to 3 leading zeros
-      while (h === 0 && pos < buf.length - 1) { pos += 1; h = buf[pos]; }
-      if ((h & 0x01) === 0x01) {
-        // 1-byte short header, length includes header
-        const len = (h >> 1) & 0x7F;
-        const body = buf.slice(pos + 1, pos + len);
-        let s = body.toString('utf8');
-        if (t === 'jsonb') {
-          // jsonb starts with a version byte (1) — the rest is the JSON
-          // tree-encoded form. Skipping for now; try plain text fallback
-          // (some short answer values were stored as text-equivalent)
-          if (body[0] === 0x01) s = body.slice(1).toString('utf8');
-        }
-        out.push(s);
-        pos += len;
-      } else if ((h & 0x03) === 0x00) {
-        // 4-byte header
-        align(4);
-        if (pos + 4 > buf.length) { out.push(null); break; }
-        const lenWord = buf.readUInt32LE(pos);
-        const len = (lenWord >> 2) & 0x3FFFFFFF;  // length includes header
-        if (len < 4 || pos + len > buf.length) { out.push(null); break; }
-        const body = buf.slice(pos + 4, pos + len);
-        out.push(body.toString('utf8'));
-        pos += len;
-      } else {
-        out.push(null); break;
-      }
-    } else if (t === 'timestamptz') {
-      align(8);
-      if (pos + 8 > buf.length) { out.push(null); break; }
-      // PostgreSQL timestamps are microseconds since 2000-01-01 UTC, as int8 LE
-      const lo = buf.readUInt32LE(pos);
-      const hi = buf.readInt32LE(pos + 4);
-      const microseconds = BigInt(hi) * 0x100000000n + BigInt(lo);
-      const PG_EPOCH_MS = Date.UTC(2000, 0, 1);
-      const ms = PG_EPOCH_MS + Number(microseconds / 1000n);
-      out.push(new Date(ms).toISOString());
-      pos += 8;
-    } else {
-      out.push('?'); break;
-    }
-  }
-  return { values: out, remaining: buf.slice(pos) };
-}
-
-// EMERGENCY FORENSIC ENDPOINT — try to read deleted rows from disk
-// (PostgreSQL keeps deleted tuples on disk as "dead tuples" until VACUUM
-// reclaims the space). Uses the pageinspect contrib extension if it's
-// available on the managed Postgres provider.
-//
-// This is an emergency one-off recovery tool. Not exposed in UI.
-// Will be removed after recovery succeeds or is confirmed impossible.
-app.get('/api/admin/_forensic/dead-tuples', requireAdmin, async (req, res) => {
-  if (!USE_DB) return res.json({ error: 'No DB available (in-memory mode)' });
-  const out = {
-    alive: null, pages: null, deadCount: 0, tuples: [],
-    extensionStatus: 'unknown', errors: [],
-  };
-  try {
-    // Step 1: how many alive rows now?
-    const alive = await pool.query('SELECT COUNT(*)::int AS n FROM survey_responses');
-    out.alive = alive.rows[0].n;
-
-    // Step 2: try to install pageinspect (contrib, usually pre-allowed)
-    try {
-      await pool.query('CREATE EXTENSION IF NOT EXISTS pageinspect');
-      out.extensionStatus = 'pageinspect ready';
-    } catch (e) {
-      out.extensionStatus = 'pageinspect denied';
-      out.errors.push('CREATE EXTENSION: ' + e.message);
-    }
-
-    // Step 3: how big is the table file?
-    const sz = await pool.query(
-      `SELECT relname, relpages, pg_size_pretty(pg_relation_size(oid)) as size
-       FROM pg_class WHERE relname IN ('survey_responses', 'survey_answers')`
-    );
-    out.pages = sz.rows;
-
-    // Step 4: read every page, find tuples (alive AND dead)
-    if (out.extensionStatus === 'pageinspect ready') {
-      for (const tbl of ['survey_responses', 'survey_answers']) {
-        const pageInfo = sz.rows.find((r) => r.relname === tbl);
-        if (!pageInfo || pageInfo.relpages === 0) continue;
-        for (let p = 0; p < pageInfo.relpages; p++) {
-          try {
-            // For each item on the page: lp_flags=1 means alive, lp_flags=0 means dead/free.
-            // t_xmax > 0 = row was deleted by transaction t_xmax.
-            // We want all tuples where t_data is NOT null AND t_xmax > 0 (recently deleted).
-            const r = await pool.query(
-              `SELECT lp, lp_off, lp_flags, lp_len, t_xmin, t_xmax,
-                      t_ctid::text AS t_ctid,
-                      octet_length(t_data) AS data_len,
-                      encode(t_data, 'escape') AS data_text,
-                      encode(t_data, 'hex') AS data_hex
-               FROM heap_page_items(get_raw_page($1, $2))
-               WHERE t_data IS NOT NULL`,
-              [tbl, p]
-            );
-            for (const row of r.rows) {
-              out.tuples.push({ table: tbl, page: p, ...row });
-              if (row.t_xmax !== '0') out.deadCount += 1;
-            }
-          } catch (e) {
-            out.errors.push(`${tbl} page ${p}: ${e.message}`);
-          }
-        }
-      }
-    }
-  } catch (e) {
-    out.errors.push('outer: ' + e.message);
-  }
-  res.json(out);
-});
-
-// EMERGENCY RECOVERY ENDPOINT — decodes dead tuples for survey_responses
-// and survey_answers, then reinserts them as fresh rows so the data is
-// alive again. Idempotent on company+phone+created_at — safe to call
-// multiple times. Requires admin role.
-app.post('/api/admin/_forensic/recover', requireAdmin, async (req, res) => {
-  if (!USE_DB) return res.json({ error: 'No DB' });
-  const result = { responsesRecovered: 0, answersRecovered: 0, errors: [], details: [] };
-
-  try {
-    await pool.query('CREATE EXTENSION IF NOT EXISTS pageinspect');
-
-    // ---- Recover responses ----
-    // Schema order: id, company_name, contact_name, position, phone, language, created_at
-    const respSchema = ['int4', 'text', 'text', 'text', 'text', 'text', 'timestamptz'];
-
-    const respPages = await pool.query(
-      `SELECT relpages FROM pg_class WHERE relname = 'survey_responses'`
-    );
-    const respPageCount = respPages.rows[0]?.relpages || 0;
-
-    // Map old-id → new-id so we can reassign answers correctly
-    const idRemap = new Map();
-
-    for (let p = 0; p < respPageCount; p++) {
-      const pageRes = await pool.query(
-        `SELECT lp, t_xmax, t_data FROM heap_page_items(get_raw_page('survey_responses', $1))
-         WHERE t_data IS NOT NULL AND t_xmax::text != '0'`,
-        [p]
-      );
-      for (const row of pageRes.rows) {
-        try {
-          const buf = row.t_data; // pg returns Buffer for bytea-like fields
-          const { values } = decodeTuple(buf, respSchema);
-          const [oldId, company, contact, position, phone, language, createdAt] = values;
-          if (!company || typeof company !== 'string' || company.length < 1) continue;
-
-          // Idempotency: skip if a live row with same company+phone+createdAt already exists
-          const existing = await pool.query(
-            `SELECT id FROM survey_responses
-             WHERE company_name = $1 AND COALESCE(phone,'') = COALESCE($2,'') AND created_at = $3`,
-            [company, phone, createdAt]
-          );
-          let newId;
-          if (existing.rows.length > 0) {
-            newId = existing.rows[0].id;
-          } else {
-            const ins = await pool.query(
-              `INSERT INTO survey_responses (company_name, contact_name, position, phone, language, created_at)
-               VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-              [company, contact || null, position || null, phone || null, language || 'ru', createdAt || new Date()]
-            );
-            newId = ins.rows[0].id;
-            result.responsesRecovered += 1;
-          }
-          idRemap.set(oldId, newId);
-          result.details.push({ page: p, oldId, newId, company, contact, phone, language });
-        } catch (e) {
-          result.errors.push(`response page ${p}: ${e.message}`);
-        }
-      }
-    }
-
-    // ---- Recover answers ----
-    // Schema: id, response_id, question_id, question_key, value(jsonb)
-    const answerSchema = ['int4', 'int4', 'int4', 'text', 'jsonb'];
-
-    const ansPages = await pool.query(
-      `SELECT relpages FROM pg_class WHERE relname = 'survey_answers'`
-    );
-    const ansPageCount = ansPages.rows[0]?.relpages || 0;
-
-    for (let p = 0; p < ansPageCount; p++) {
-      const pageRes = await pool.query(
-        `SELECT lp, t_xmax, t_data FROM heap_page_items(get_raw_page('survey_answers', $1))
-         WHERE t_data IS NOT NULL AND t_xmax::text != '0'`,
-        [p]
-      );
-      for (const row of pageRes.rows) {
-        try {
-          const buf = row.t_data;
-          const { values } = decodeTuple(buf, answerSchema);
-          const [_oldAnsId, oldRespId, questionId, qKey, valueRaw] = values;
-          const newRespId = idRemap.get(oldRespId);
-          if (!newRespId) continue;
-          if (!qKey) continue;
-
-          // Try to coerce valueRaw — could be plain text or JSON-encoded
-          let valueJson;
-          try { valueJson = valueRaw == null ? null : JSON.parse(valueRaw); }
-          catch (_) { valueJson = valueRaw; }
-
-          // Idempotency
-          const existing = await pool.query(
-            `SELECT id FROM survey_answers WHERE response_id = $1 AND question_key = $2`,
-            [newRespId, qKey]
-          );
-          if (existing.rows.length > 0) continue;
-
-          await pool.query(
-            `INSERT INTO survey_answers (response_id, question_id, question_key, value)
-             VALUES ($1, $2, $3, $4::jsonb)`,
-            [newRespId, questionId || null, qKey, JSON.stringify(valueJson)]
-          );
-          result.answersRecovered += 1;
-        } catch (e) {
-          result.errors.push(`answer page ${p}: ${e.message}`);
-        }
-      }
-    }
-  } catch (e) {
-    result.errors.push('outer: ' + e.message);
-  }
-
-  res.json(result);
-});
 
 app.get('/api/admin/survey/stats', requireAuth, async (req, res) => {
   try {
@@ -1122,7 +875,13 @@ app.delete('/api/admin/survey/responses/:id', requireAdmin, async (req, res) => 
   if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'Неверный id' });
   try {
     if (USE_DB) {
-      const r = await pool.query('DELETE FROM survey_responses WHERE id = $1', [id]);
+      // Soft-delete: mark deleted_at, keep the row + its answers in DB.
+      // To recover from accidental deletion, run UPDATE survey_responses
+      // SET deleted_at = NULL WHERE id IN (...).
+      const r = await pool.query(
+        'UPDATE survey_responses SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL',
+        [id]
+      );
       return res.json({ ok: true, deleted: r.rowCount });
     } else {
       const before = memStore.responses.length;
