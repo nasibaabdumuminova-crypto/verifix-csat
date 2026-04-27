@@ -788,6 +788,33 @@ app.get('/api/admin/whoami', requireAuth, (req, res) => {
   res.json({ role: req.userRole, viewerEnabled: !!ADMIN_PASSWORD_VIEWER });
 });
 
+// === ONE-OFF: bulk-update identity (contact / position / company) by phone ===
+// Pass only the fields you want to update; nulls/missing are left as-is.
+// To be removed after recovery backfill is complete.
+app.post('/api/admin/_update_identity', requireAdmin, async (req, res) => {
+  if (!USE_DB) return res.json({ error: 'No DB' });
+  const updates = (req.body && req.body.updates) || [];
+  if (!Array.isArray(updates) || !updates.length) return res.status(400).json({ error: 'updates[] required' });
+  let updated = 0; const errors = [];
+  for (const u of updates) {
+    try {
+      const sets = []; const vals = []; let i = 1;
+      if (u.contact !== undefined)  { sets.push(`contact_name = $${i++}`); vals.push(u.contact); }
+      if (u.position !== undefined) { sets.push(`position = $${i++}`);     vals.push(u.position); }
+      if (u.company !== undefined)  { sets.push(`company_name = $${i++}`); vals.push(u.company); }
+      if (!sets.length) { errors.push(`${u.phone}: no fields to update`); continue; }
+      vals.push(u.phone);
+      const r = await pool.query(
+        `UPDATE survey_responses SET ${sets.join(', ')}
+         WHERE phone = $${i} AND deleted_at IS NULL`,
+        vals
+      );
+      updated += r.rowCount;
+    } catch (e) { errors.push(`${u.phone}: ${e.message}`); }
+  }
+  res.json({ updated, errors });
+});
+
 app.get('/api/admin/survey/stats', requireAuth, async (req, res) => {
   try {
     const responses = await getAllResponses();
