@@ -788,6 +788,25 @@ app.get('/api/admin/whoami', requireAuth, (req, res) => {
   res.json({ role: req.userRole, viewerEnabled: !!ADMIN_PASSWORD_VIEWER });
 });
 
+// === ONE-OFF: bulk-update positions by phone match ===
+// To be removed after positions backfilled from screenshots / CRM.
+app.post('/api/admin/_update_positions', requireAdmin, async (req, res) => {
+  if (!USE_DB) return res.json({ error: 'No DB' });
+  const updates = (req.body && req.body.updates) || [];
+  if (!Array.isArray(updates) || !updates.length) return res.status(400).json({ error: 'updates[] required' });
+  let updated = 0; const errors = [];
+  for (const u of updates) {
+    try {
+      const r = await pool.query(
+        `UPDATE survey_responses SET position = $1
+         WHERE phone = $2 AND deleted_at IS NULL`,
+        [u.position, u.phone]
+      );
+      updated += r.rowCount;
+    } catch (e) { errors.push(`${u.phone}: ${e.message}`); }
+  }
+  res.json({ updated, errors });
+});
 
 app.get('/api/admin/survey/stats', requireAuth, async (req, res) => {
   try {
