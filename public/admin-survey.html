@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=19" />
+<link rel="stylesheet" href="/style.css?v=20" />
 </head>
 <body class="page-admin">
   <div class="bg-glow"></div>
@@ -164,6 +164,15 @@
           <div class="stat-label">Планы по штату (6.3)</div>
           <div id="s_dist_headcount" class="dist-list"></div>
           <div class="stat-sub muted">Рост штата клиента — потенциал расширения контракта.</div>
+        </div>
+      </div>
+
+      <h3 class="dash-section">Должности респондентов</h3>
+      <div class="stats-grid dist-grid">
+        <div class="stat-card dist-card">
+          <div class="stat-label">Должности (1.3)</div>
+          <div id="s_dist_position" class="dist-list"></div>
+          <div class="stat-sub muted">Кто заполнял анкету в каждой компании. Клик по строке — список компаний с этой должностью.</div>
         </div>
       </div>
 
@@ -459,6 +468,7 @@ function renderStats() {
   fillDist('s_dist_mobile', s.distributions.mobile_usage);
   fillDist('s_dist_callback', s.distributions.callback_request);
   fillDist('s_dist_headcount', s.distributions.headcount_plans);
+  fillDist('s_dist_position', s.distributions.position);
 }
 
 // Render a 1–5 scale card: big average + histogram bar with red/yellow/green
@@ -526,6 +536,11 @@ const DIST_QUESTION_KEY = {
   s_dist_callback: 'callback_request',
   s_dist_headcount: 'headcount_plans',
 };
+// Identity-style distributions live on the response row itself, not in
+// the answers table. The drill-down predicate reads r[field] instead.
+const DIST_RESPONSE_FIELD = {
+  s_dist_position: 'position',
+};
 // Card labels (used in the filter chip when user clicks a row)
 const DIST_LABEL = {
   s_dist_roi: 'Окупаемость',
@@ -536,6 +551,7 @@ const DIST_LABEL = {
   s_dist_mobile: 'Пользуются мобильной',
   s_dist_callback: 'Запрос звонка',
   s_dist_headcount: 'Планы по штату',
+  s_dist_position: 'Должность',
 };
 
 function fillDist(id, dist) {
@@ -545,6 +561,7 @@ function fillDist(id, dist) {
   const total = entries.reduce((s, [, n]) => s + n, 0);
   if (!total) { el.innerHTML = '<div class="muted">Нет данных</div>'; return; }
   const qKey = DIST_QUESTION_KEY[id];
+  const respField = DIST_RESPONSE_FIELD[id];
   const cardLabel = DIST_LABEL[id] || id;
   el.innerHTML = entries.map(([k, n], idx) => {
     const pct = Math.round(n / total * 100);
@@ -555,14 +572,21 @@ function fillDist(id, dist) {
         <div class="dist-n">${n} · ${pct}%</div>
       </div>`;
   }).join('');
-  // Wire each row to drill-down the responses table by exact value match
-  // (or membership for array-typed answers like checkboxes).
-  if (qKey) {
+  // Wire each row to drill-down the responses table by exact value match.
+  // For identity-style distributions (position) we read r[respField] directly;
+  // for question-based ones we read a[qKey] from the answers map.
+  if (qKey || respField) {
     el.querySelectorAll('.dist-row').forEach((row, idx) => {
       const val = entries[idx][0];
       row.onclick = () => applyDashFilter({
         label: cardLabel + ': ' + val,
-        test: (_, a) => {
+        test: (r, a) => {
+          if (respField) {
+            const x = r && r[respField];
+            // Server bucketed empty/null position as "(не указана)"
+            if (val === '(не указана)') return !x || !String(x).trim();
+            return String(x || '') === String(val);
+          }
           const x = a[qKey];
           if (Array.isArray(x)) return x.map(String).includes(String(val));
           return String(x) === String(val);
@@ -1178,6 +1202,6 @@ function escapeAttr(s) { return escapeHtml(s); }
   }
 })();
 </script>
-<script src="/stars.js?v=19"></script>
+<script src="/stars.js?v=20"></script>
 </body>
 </html>

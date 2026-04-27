@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=14" />
+<link rel="stylesheet" href="/style.css?v=15" />
 </head>
 <body class="survey-v2">
   <div class="survey-shell">
@@ -19,9 +19,9 @@
           <span class="brand-name">Verifix</span>
         </div>
         <div class="lang-tabs" role="tablist" aria-label="Язык опросника">
-          <button type="button" class="lang-tab" data-lang-sw="ru"     role="tab" aria-selected="false">RU</button>
           <button type="button" class="lang-tab" data-lang-sw="uz_cyr" role="tab" aria-selected="false">ЎЗ</button>
           <button type="button" class="lang-tab" data-lang-sw="uz_lat" role="tab" aria-selected="false">UZ</button>
+          <button type="button" class="lang-tab" data-lang-sw="ru"     role="tab" aria-selected="false">RU</button>
         </div>
       </div>
       <div class="side-context" id="sideContext"></div>
@@ -538,12 +538,13 @@ function renderSidebar() {
 function renderIntro() {
   const ui = state.lang ? UI[state.lang] : UI.ru;
   if (!state.lang) {
+    // Uzbek-first ordering — survey targets Uzbekistan market.
     return `
-      <h1 class="q-head">${escapeHtml(UI.ru.selectLangHeading)} · ${escapeHtml(UI.uz_cyr.selectLangHeading)} · ${escapeHtml(UI.uz_lat.selectLangHeading)}</h1>
-      <p class="q-body-text">${escapeHtml(UI.ru.selectLangBody)}</p>
-      <p class="q-body-text muted-text">${escapeHtml(UI.uz_cyr.selectLangBody)}</p>
+      <h1 class="q-head">${escapeHtml(UI.uz_cyr.selectLangHeading)} · ${escapeHtml(UI.uz_lat.selectLangHeading)} · ${escapeHtml(UI.ru.selectLangHeading)}</h1>
+      <p class="q-body-text">${escapeHtml(UI.uz_cyr.selectLangBody)}</p>
       <p class="q-body-text muted-text">${escapeHtml(UI.uz_lat.selectLangBody)}</p>
-      <p class="q-hint">← ${escapeHtml(UI.ru.selectLangHeading)}</p>`;
+      <p class="q-body-text muted-text">${escapeHtml(UI.ru.selectLangBody)}</p>
+      <p class="q-hint">← ${escapeHtml(UI.uz_cyr.selectLangHeading)}</p>`;
   }
   return `
     <h1 class="q-head welcome-head">${escapeHtml(ui.surveyTitle)}</h1>

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style-v10.css?v=3" />
+<link rel="stylesheet" href="/style-v10.css?v=4" />
 </head>
 <body class="page-public page-survey page-survey-single">
   <div class="bg-glow"></div>
@@ -429,13 +429,12 @@ function render(opts = {}) {
 
 function renderLangPicker() {
   const titles = { ru: UI.ru.selectLang, uz_cyr: UI.uz_cyr.selectLang, uz_lat: UI.uz_lat.selectLang };
+  // Uzbek-first ordering on a survey for the Uzbekistan market.
+  // The data-lang values are unchanged (ru / uz_cyr / uz_lat) so existing
+  // responses in the DB stay valid — only the visual order shifted.
   return `
-    <h1 class="screen-title">${titles.ru} · ${titles.uz_cyr} · ${titles.uz_lat}</h1>
+    <h1 class="screen-title">${titles.uz_cyr} · ${titles.uz_lat} · ${titles.ru}</h1>
     <div class="lang-options">
-      <button type="button" class="lang-opt" data-lang="ru">
-        <div class="lang-code">RU</div>
-        <div class="lang-name">${LANG_NAMES.ru}</div>
-      </button>
       <button type="button" class="lang-opt" data-lang="uz_cyr">
         <div class="lang-code">ЎЗБ</div>
         <div class="lang-name">${LANG_NAMES.uz_cyr}</div>
@@ -443,6 +442,10 @@ function renderLangPicker() {
       <button type="button" class="lang-opt" data-lang="uz_lat">
         <div class="lang-code">UZ</div>
         <div class="lang-name">${LANG_NAMES.uz_lat}</div>
+      </button>
+      <button type="button" class="lang-opt" data-lang="ru">
+        <div class="lang-code">RU</div>
+        <div class="lang-name">${LANG_NAMES.ru}</div>
       </button>
     </div>
   `;
@@ -998,6 +1001,6 @@ function escapeAttr(s) { return escapeHtml(s); }
 
 init();
 </script>
-<script src="/stars-v10.js?v=3"></script>
+<script src="/stars-v10.js?v=4"></script>
 </body>
 </html>
